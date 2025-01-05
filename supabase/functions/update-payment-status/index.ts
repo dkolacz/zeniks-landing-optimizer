@@ -7,8 +7,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-async function addToMailchimp(email: string, firstName: string, lastName: string) {
-  const audienceId = "438265";
+async function addToMailchimp(email: string, fullName: string, listingUrl: string) {
+  const audienceId = "436865";
   const dataCenter = Deno.env.get('MAILCHIMP_API_KEY')?.split('-')[1];
   const apiKey = Deno.env.get('MAILCHIMP_API_KEY');
 
@@ -30,8 +30,9 @@ async function addToMailchimp(email: string, firstName: string, lastName: string
         email_address: email,
         status: 'subscribed',
         merge_fields: {
-          FNAME: firstName,
-          LNAME: lastName,
+          FNAME: fullName,
+          EMAIL: email,
+          URL: listingUrl,
         },
       }),
     });
@@ -70,7 +71,7 @@ serve(async (req) => {
       );
 
       // Store the form data in Supabase
-      const { error: insertError } = await supabaseClient
+      const { data: insertData, error: insertError } = await supabaseClient
         .from('listing_analysis_requests')
         .insert({
           listing_url: session.metadata?.listing_url,
@@ -80,24 +81,23 @@ serve(async (req) => {
           payment_status: 'completed',
           stripe_session_id: session_id,
           stripe_payment_id: session.payment_intent as string,
-        });
+        })
+        .select()
+        .single();
 
       if (insertError) {
         console.error('Error inserting data:', insertError);
         throw new Error('Failed to store analysis request');
       }
 
-      // Split full name into first and last name for Mailchimp
-      const fullName = session.metadata?.full_name || '';
-      const [firstName, ...lastNameParts] = fullName.split(' ');
-      const lastName = lastNameParts.join(' ');
-
       // Add user to Mailchimp
-      await addToMailchimp(
-        session.metadata?.email || '',
-        firstName || '',
-        lastName || ''
-      );
+      if (insertData) {
+        await addToMailchimp(
+          insertData.email,
+          insertData.full_name,
+          insertData.listing_url
+        );
+      }
 
       return new Response(
         JSON.stringify({ status: 'paid' }),
