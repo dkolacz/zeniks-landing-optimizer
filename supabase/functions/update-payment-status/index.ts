@@ -56,12 +56,15 @@ serve(async (req) => {
 
   try {
     const { session_id } = await req.json();
+    console.log('Checking payment status for session:', session_id);
 
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
       apiVersion: '2023-10-16',
     });
 
+    // Retrieve the session from Stripe
     const session = await stripe.checkout.sessions.retrieve(session_id);
+    console.log('Stripe session status:', session.payment_status);
     
     if (session.payment_status === 'paid') {
       // Create Supabase client
@@ -70,6 +73,8 @@ serve(async (req) => {
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       );
 
+      console.log('Storing payment data in Supabase...');
+      
       // Store the form data in Supabase
       const { data: insertData, error: insertError } = await supabaseClient
         .from('listing_analysis_requests')
@@ -90,13 +95,17 @@ serve(async (req) => {
         throw new Error('Failed to store analysis request');
       }
 
+      console.log('Payment data stored successfully');
+
       // Add user to Mailchimp
       if (insertData) {
+        console.log('Adding user to Mailchimp...');
         await addToMailchimp(
           insertData.email,
           insertData.full_name,
           insertData.listing_url
         );
+        console.log('User added to Mailchimp successfully');
       }
 
       return new Response(

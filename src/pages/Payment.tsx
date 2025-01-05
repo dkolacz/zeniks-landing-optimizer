@@ -37,12 +37,19 @@ const Payment = () => {
             body: { session_id: sessionId },
           });
 
-          if (error) throw error;
+          if (error) {
+            console.error('Error checking payment status:', error);
+            throw error;
+          }
 
-          if (data.status === 'paid') {
+          // Check if the payment was successful
+          if (data?.status === 'paid') {
+            // Clear the form data from localStorage
             localStorage.removeItem("analysisRequest");
+            // Redirect to success page with session ID
             navigate(`/success?session_id=${sessionId}`, { replace: true });
           } else {
+            console.error('Payment not completed:', data);
             toast({
               title: "Payment Failed",
               description: "There was an issue processing your payment. Please try again.",
@@ -81,7 +88,7 @@ const Payment = () => {
 
       if (error) throw error;
 
-      if (data.url) {
+      if (data?.url) {
         window.location.href = data.url;
       }
     } catch (error) {
