@@ -9,15 +9,16 @@ const corsHeaders = {
 
 async function addToMailchimp(email: string, fullName: string, listingUrl: string) {
   const audienceId = "436865";
-  const dataCenter = Deno.env.get('MAILCHIMP_API_KEY')?.split('-')[1];
   const apiKey = Deno.env.get('MAILCHIMP_API_KEY');
+  const dataCenter = apiKey?.split('-')[1];
 
   if (!apiKey || !dataCenter) {
     console.error('Mailchimp API key not configured');
-    return;
+    throw new Error('Mailchimp API key not configured');
   }
 
   const url = `https://${dataCenter}.api.mailchimp.com/3.0/lists/${audienceId}/members`;
+  console.log('Mailchimp API URL:', url);
 
   try {
     const response = await fetch(url, {
@@ -31,20 +32,22 @@ async function addToMailchimp(email: string, fullName: string, listingUrl: strin
         status: 'subscribed',
         merge_fields: {
           FNAME: fullName,
-          EMAIL: email,
           URL: listingUrl,
         },
       }),
     });
 
     const data = await response.json();
-    console.log('Mailchimp response:', data);
+    console.log('Mailchimp API response:', data);
 
     if (!response.ok) {
+      console.error('Mailchimp error details:', data);
       throw new Error(`Failed to add to Mailchimp: ${data.detail || data.title || 'Unknown error'}`);
     }
+
+    return data;
   } catch (error) {
-    console.error('Error adding to Mailchimp:', error);
+    console.error('Error in Mailchimp API call:', error);
     throw error;
   }
 }
@@ -100,12 +103,18 @@ serve(async (req) => {
       // Add user to Mailchimp
       if (insertData) {
         console.log('Adding user to Mailchimp...');
-        await addToMailchimp(
-          insertData.email,
-          insertData.full_name,
-          insertData.listing_url
-        );
-        console.log('User added to Mailchimp successfully');
+        try {
+          await addToMailchimp(
+            insertData.email,
+            insertData.full_name,
+            insertData.listing_url
+          );
+          console.log('User added to Mailchimp successfully');
+        } catch (mailchimpError) {
+          console.error('Mailchimp error:', mailchimpError);
+          // Continue with the success response even if Mailchimp fails
+          // We don't want to block the user's success page if Mailchimp has issues
+        }
       }
 
       return new Response(
