@@ -10,15 +10,21 @@ const corsHeaders = {
 async function addToMailchimp(email: string, fullName: string, listingUrl: string) {
   const audienceId = "436865";
   const apiKey = Deno.env.get('MAILCHIMP_API_KEY');
-  const dataCenter = apiKey?.split('-')[1];
-
-  if (!apiKey || !dataCenter) {
+  
+  if (!apiKey) {
     console.error('Mailchimp API key not configured');
     throw new Error('Mailchimp API key not configured');
   }
 
-  const url = `https://${dataCenter}.api.mailchimp.com/3.0/lists/${audienceId}/members`;
-  console.log('Mailchimp API URL:', url);
+  const [_, datacenter] = apiKey.split('-');
+  
+  if (!datacenter) {
+    console.error('Invalid Mailchimp API key format');
+    throw new Error('Invalid Mailchimp API key format');
+  }
+
+  const url = `https://${datacenter}.api.mailchimp.com/3.0/lists/${audienceId}/members`;
+  console.log('Attempting to add member to Mailchimp...');
 
   try {
     const response = await fetch(url, {
@@ -38,16 +44,20 @@ async function addToMailchimp(email: string, fullName: string, listingUrl: strin
     });
 
     const data = await response.json();
-    console.log('Mailchimp API response:', data);
-
+    
     if (!response.ok) {
-      console.error('Mailchimp error details:', data);
-      throw new Error(`Failed to add to Mailchimp: ${data.detail || data.title || 'Unknown error'}`);
+      console.error('Mailchimp API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        data,
+      });
+      throw new Error(`Mailchimp API error: ${data.detail || data.title || 'Unknown error'}`);
     }
 
+    console.log('Successfully added member to Mailchimp');
     return data;
   } catch (error) {
-    console.error('Error in Mailchimp API call:', error);
+    console.error('Failed to add member to Mailchimp:', error);
     throw error;
   }
 }
@@ -59,7 +69,7 @@ serve(async (req) => {
 
   try {
     const { session_id } = await req.json();
-    console.log('Checking payment status for session:', session_id);
+    console.log('Processing payment status for session:', session_id);
 
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
       apiVersion: '2023-10-16',
