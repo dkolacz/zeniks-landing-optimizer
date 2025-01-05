@@ -26,7 +26,14 @@ serve(async (req) => {
       customer_email: email,
       line_items: [
         {
-          price: 'price_1Qe0ChEQ1gZWqi10K1wJ0JKl',
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: 'Listing Analysis Report',
+              description: 'Personalized analysis of your rental property listing',
+            },
+            unit_amount: 4900, // $49.00 in cents
+          },
           quantity: 1,
         },
       ],

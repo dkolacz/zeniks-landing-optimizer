@@ -4,9 +4,10 @@ import { z } from "zod";
 import { DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { FormFields } from "./FormFields";
 import { TermsCheckbox } from "./TermsCheckbox";
+import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   listingUrl: z.string().url("Please enter a valid URL"),
@@ -41,22 +42,20 @@ const RequestForm = () => {
       // Store form data in localStorage for the payment page
       localStorage.setItem("analysisRequest", JSON.stringify(values));
       
-      // Create checkout session
-      const response = await fetch("/api/create-checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(values),
+      // Create checkout session using Supabase Edge Function
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: values
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to create checkout session");
+      if (error || !data?.url) {
+        console.error('Checkout error:', error);
+        throw new Error(error?.message || 'Failed to create checkout session');
       }
 
-      const { url } = await response.json();
-      window.location.href = url;
+      // Redirect to Stripe checkout
+      window.location.href = data.url;
     } catch (error) {
+      console.error('Form submission error:', error);
       toast({
         title: "Error",
         description: "Failed to process payment. Please try again.",
