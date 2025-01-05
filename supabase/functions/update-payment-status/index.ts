@@ -23,7 +23,7 @@ async function addToMailchimp(email: string, fullName: string, listingUrl: strin
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Authorization': `apikey ${apiKey}`,
+        'Authorization': `Basic ${btoa(`anystring:${apiKey}`)}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -41,11 +41,11 @@ async function addToMailchimp(email: string, fullName: string, listingUrl: strin
     console.log('Mailchimp response:', data);
 
     if (!response.ok) {
-      throw new Error(`Failed to add to Mailchimp: ${data.detail}`);
+      throw new Error(`Failed to add to Mailchimp: ${data.detail || data.title || 'Unknown error'}`);
     }
   } catch (error) {
     console.error('Error adding to Mailchimp:', error);
-    // We don't throw here to avoid breaking the payment flow
+    throw error;
   }
 }
 
