@@ -40,12 +40,9 @@ const Payment = () => {
           if (error) throw error;
 
           if (data.status === 'paid') {
-            toast({
-              title: "Payment Successful",
-              description: "Your listing analysis request has been received. We'll send the report to your email soon.",
-            });
+            // Redirect to success page with session ID
+            navigate(`/success?session_id=${sessionId}`);
             localStorage.removeItem("analysisRequest");
-            navigate("/");
           } else {
             toast({
               title: "Payment Failed",
