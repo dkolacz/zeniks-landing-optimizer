@@ -40,7 +40,7 @@ const Payment = () => {
           if (error) throw error;
 
           if (data.status === 'paid') {
-            // Redirect to success page with session ID and clear localStorage
+            // Clear localStorage and redirect to success page
             localStorage.removeItem("analysisRequest");
             navigate(`/success?session_id=${sessionId}`, { replace: true });
           } else {
@@ -49,7 +49,7 @@ const Payment = () => {
               description: "There was an issue processing your payment. Please try again.",
               variant: "destructive",
             });
-            navigate("/request-analysis");
+            navigate("/request-analysis", { replace: true });
           }
         } catch (error) {
           console.error('Error updating payment status:', error);
@@ -58,18 +58,20 @@ const Payment = () => {
             description: "There was an issue processing your payment. Please try again.",
             variant: "destructive",
           });
-          navigate("/request-analysis");
+          navigate("/request-analysis", { replace: true });
         }
       } else if (status === 'cancelled') {
         toast({
           title: "Payment Cancelled",
           description: "You've cancelled the payment. You can try again when you're ready.",
         });
-        navigate("/request-analysis");
+        navigate("/request-analysis", { replace: true });
       }
     };
 
-    handlePaymentStatus();
+    if (sessionId || status) {
+      handlePaymentStatus();
+    }
   }, [sessionId, status, navigate, toast]);
 
   const handlePayment = async () => {
@@ -94,7 +96,7 @@ const Payment = () => {
   };
 
   // Only show payment form if we have form data and no session ID
-  if (!sessionId && formData) {
+  if (!sessionId && !status && formData) {
     return (
       <div className="min-h-screen bg-zeniks-gray-light py-12">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
