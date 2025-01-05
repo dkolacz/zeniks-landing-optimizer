@@ -36,7 +36,7 @@ async function addToMailchimp(email: string, fullName: string, listingUrl: strin
     merge_fields: {
       FNAME: firstName || '',
       LNAME: lastName || '',
-      MMERGE3: listingUrl // Using MMERGE3 for the listing URL
+      MMERGE3: listingUrl
     }
   };
 
@@ -52,7 +52,7 @@ async function addToMailchimp(email: string, fullName: string, listingUrl: strin
         'Authorization': `Basic ${btoa(`anystring:${apiKey}`)}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(requestBody),
     });
 
     const data = await response.json();
@@ -94,7 +94,7 @@ serve(async (req) => {
     // Retrieve the session from Stripe
     const session = await stripe.checkout.sessions.retrieve(session_id);
     console.log('Stripe session status:', session.payment_status);
-    
+
     if (session.payment_status === 'paid') {
       // Create Supabase client
       const supabaseClient = createClient(
@@ -102,8 +102,6 @@ serve(async (req) => {
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       );
 
-      console.log('Retrieving analysis request data from database...');
-      
       // Get the form data from the database
       const { data: requestData, error: fetchError } = await supabaseClient
         .from('listing_analysis_requests')
@@ -111,37 +109,49 @@ serve(async (req) => {
         .eq('stripe_session_id', session_id)
         .single();
 
-      if (fetchError || !requestData) {
+      if (fetchError) {
         console.error('Error fetching analysis request:', fetchError);
         throw new Error('Failed to fetch analysis request data');
       }
 
-      console.log('Analysis request data retrieved:', requestData);
-
-      // Update the payment status
-      const { error: updateError } = await supabaseClient
-        .from('listing_analysis_requests')
-        .update({
-          payment_status: 'completed',
-          stripe_payment_id: session.payment_intent as string,
-        })
-        .eq('id', requestData.id);
-
-      if (updateError) {
-        console.error('Error updating payment status:', updateError);
-        throw new Error('Failed to update payment status');
+      if (!requestData) {
+        console.error('No analysis request found for session:', session_id);
+        throw new Error('Analysis request not found');
       }
 
-      // Add user to Mailchimp
-      try {
-        await addToMailchimp(
-          requestData.email,
-          requestData.full_name,
-          requestData.listing_url
-        );
-      } catch (mailchimpError) {
-        // Log the error but don't throw it - we don't want to block the success response
-        console.error('Mailchimp integration error:', mailchimpError);
+      console.log('Analysis request data retrieved:', requestData);
+
+      // Only update if payment status is not already completed
+      if (requestData.payment_status !== 'completed') {
+        const { error: updateError } = await supabaseClient
+          .from('listing_analysis_requests')
+          .update({
+            payment_status: 'completed',
+            stripe_payment_id: session.payment_intent as string,
+          })
+          .eq('id', requestData.id);
+
+        if (updateError) {
+          console.error('Error updating payment status:', updateError);
+          throw new Error('Failed to update payment status');
+        }
+
+        console.log('Payment status updated successfully');
+
+        // Add user to Mailchimp only after successful payment update
+        try {
+          await addToMailchimp(
+            requestData.email,
+            requestData.full_name,
+            requestData.listing_url
+          );
+          console.log('Successfully added to Mailchimp');
+        } catch (mailchimpError) {
+          console.error('Mailchimp integration error:', mailchimpError);
+          // Log but don't throw the error - we want the payment success to go through
+        }
+      } else {
+        console.log('Payment already marked as completed, skipping update');
       }
 
       return new Response(
