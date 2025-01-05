@@ -10,7 +10,7 @@ const corsHeaders = {
 async function addToMailchimp(email: string, fullName: string, listingUrl: string) {
   console.log('Starting Mailchimp contact creation with:', { email, fullName, listingUrl });
   
-  const audienceId = "436865";
+  const audienceId = "91ede30ac7";
   const apiKey = Deno.env.get('MAILCHIMP_API_KEY');
   
   if (!apiKey) {

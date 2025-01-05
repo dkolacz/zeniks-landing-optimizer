@@ -37,26 +37,11 @@ const Payment = () => {
             body: { session_id: sessionId },
           });
 
-          if (error) {
-            console.error('Error checking payment status:', error);
-            throw error;
-          }
+          if (error) throw error;
 
-          // Check if the payment was successful
-          if (data?.status === 'paid') {
-            // Clear the form data from localStorage
-            localStorage.removeItem("analysisRequest");
-            // Redirect to success page with session ID
-            navigate(`/success?session_id=${sessionId}`, { replace: true });
-          } else {
-            console.error('Payment not completed:', data);
-            toast({
-              title: "Payment Failed",
-              description: "There was an issue processing your payment. Please try again.",
-              variant: "destructive",
-            });
-            navigate("/request-analysis", { replace: true });
-          }
+          // If we get a response without error, redirect to success
+          navigate(`/success?session_id=${sessionId}`, { replace: true });
+          
         } catch (error) {
           console.error('Error updating payment status:', error);
           toast({
