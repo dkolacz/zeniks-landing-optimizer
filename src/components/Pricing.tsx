@@ -1,6 +1,9 @@
 import { ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Pricing = () => {
+  const navigate = useNavigate();
+
   return (
     <section id="pricing" className="py-20 bg-zeniks-gray-blue">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -12,7 +15,10 @@ const Pricing = () => {
             Get a comprehensive, AI-powered analysis of your listing and a
             personalized report with actionable recommendations for just $49.
           </p>
-          <button className="bg-zeniks-purple text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-opacity-90 transition-all inline-flex items-center gap-2 group">
+          <button
+            onClick={() => navigate("/request-analysis")}
+            className="bg-zeniks-purple text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-opacity-90 transition-all inline-flex items-center gap-2 group"
+          >
             Analyze My Listing Now
             <ArrowRight className="group-hover:translate-x-1 transition-transform" />
           </button>
