@@ -1,17 +1,21 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Payment = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [formData, setFormData] = useState<any>(null);
+  const [searchParams] = useSearchParams();
+  const sessionId = searchParams.get("session_id");
+  const status = searchParams.get("status");
 
   useEffect(() => {
     const data = localStorage.getItem("analysisRequest");
-    if (!data) {
+    if (!data && !sessionId) {
       toast({
         title: "Error",
         description: "Please fill out the analysis request form first.",
@@ -20,8 +24,74 @@ const Payment = () => {
       navigate("/request-analysis");
       return;
     }
-    setFormData(JSON.parse(data));
+    if (data) {
+      setFormData(JSON.parse(data));
+    }
   }, [navigate, toast]);
+
+  useEffect(() => {
+    const handlePaymentStatus = async () => {
+      if (sessionId) {
+        try {
+          const { data, error } = await supabase.functions.invoke('update-payment-status', {
+            body: { session_id: sessionId },
+          });
+
+          if (error) throw error;
+
+          if (data.status === 'paid') {
+            toast({
+              title: "Payment Successful",
+              description: "Your listing analysis request has been received. We'll send the report to your email soon.",
+            });
+            localStorage.removeItem("analysisRequest");
+            navigate("/");
+          } else {
+            toast({
+              title: "Payment Failed",
+              description: "There was an issue processing your payment. Please try again.",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          console.error('Error updating payment status:', error);
+          toast({
+            title: "Error",
+            description: "There was an issue processing your payment. Please try again.",
+            variant: "destructive",
+          });
+        }
+      } else if (status === 'cancelled') {
+        toast({
+          title: "Payment Cancelled",
+          description: "You've cancelled the payment. You can try again when you're ready.",
+        });
+      }
+    };
+
+    handlePaymentStatus();
+  }, [sessionId, status, navigate, toast]);
+
+  const handlePayment = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: formData,
+      });
+
+      if (error) throw error;
+
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      toast({
+        title: "Error",
+        description: "There was an issue initiating the payment. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-zeniks-gray-light py-12">
@@ -45,10 +115,12 @@ const Payment = () => {
           <h1 className="text-3xl md:text-4xl font-bold text-zeniks-purple text-center mb-4">
             Complete Your Payment
           </h1>
-          <p className="text-zeniks-gray-dark text-center mb-8 max-w-2xl mx-auto">
-            Your analysis report will be sent to {formData?.email} after payment is
-            processed.
-          </p>
+          {formData && (
+            <p className="text-zeniks-gray-dark text-center mb-8 max-w-2xl mx-auto">
+              Your analysis report will be sent to {formData.email} after payment is
+              processed.
+            </p>
+          )}
 
           <div className="max-w-xl mx-auto">
             <div className="bg-zeniks-gray-blue rounded-lg p-6 mb-8">
@@ -69,13 +141,7 @@ const Payment = () => {
 
             <div className="text-center space-y-4">
               <Button
-                onClick={() => {
-                  toast({
-                    title: "Coming Soon",
-                    description:
-                      "Payment processing will be implemented with Stripe.",
-                  });
-                }}
+                onClick={handlePayment}
                 className="w-full bg-zeniks-purple hover:bg-opacity-90 text-white"
               >
                 Pay Securely
