@@ -46,16 +46,9 @@ const Success = () => {
 
           <div className="space-y-6">
             <p className="text-zeniks-gray-dark text-lg">
-              Thank you for your purchase! We've received your payment of $49 for your Zenik listing analysis. 
-              We're now analyzing your listing at{" "}
-              <span className="text-zeniks-purple font-semibold">
-                {listingDetails.listing_url}
-              </span>{" "}
-              and will deliver your personalized report to{" "}
-              <span className="text-zeniks-purple font-semibold">
-                {listingDetails.email}
-              </span>{" "}
-              within 24-48 hours. We're excited to help you improve your listing's performance!
+              Thank you for your purchase! We've received your payment of $49 for your Zeniks listing analysis. 
+              We're now analyzing your listing and will deliver your personalized report to your email within 24-48 hours. 
+              We're excited to help you improve your listing's performance!
             </p>
 
             <div className="bg-zeniks-gray-blue rounded-lg p-6">
