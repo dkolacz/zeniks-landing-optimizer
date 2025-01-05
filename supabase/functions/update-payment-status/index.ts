@@ -20,23 +20,39 @@ serve(async (req) => {
     });
 
     const session = await stripe.checkout.sessions.retrieve(session_id);
+    
+    if (session.payment_status === 'paid') {
+      // Create Supabase client
+      const supabaseClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      );
 
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    );
+      // Store the form data in Supabase
+      const { error: insertError } = await supabaseClient
+        .from('listing_analysis_requests')
+        .insert({
+          listing_url: session.metadata?.listing_url,
+          platform: session.metadata?.platform,
+          full_name: session.metadata?.full_name,
+          email: session.metadata?.email,
+          payment_status: 'completed',
+          stripe_session_id: session_id,
+          stripe_payment_id: session.payment_intent as string,
+        });
 
-    const { error: updateError } = await supabaseClient
-      .from('listing_analysis_requests')
-      .update({
-        payment_status: session.payment_status === 'paid' ? 'completed' : 'failed',
-        stripe_payment_id: session.payment_intent as string,
-      })
-      .eq('stripe_session_id', session_id);
+      if (insertError) {
+        console.error('Error inserting data:', insertError);
+        throw new Error('Failed to store analysis request');
+      }
 
-    if (updateError) {
-      console.error('Error updating payment status:', updateError);
-      throw new Error('Failed to update payment status');
+      return new Response(
+        JSON.stringify({ status: 'paid' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
     }
 
     return new Response(
