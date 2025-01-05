@@ -8,6 +8,8 @@ const corsHeaders = {
 };
 
 async function addToMailchimp(email: string, fullName: string, listingUrl: string) {
+  console.log('Starting Mailchimp contact creation with:', { email, fullName, listingUrl });
+  
   const audienceId = "436865";
   const apiKey = Deno.env.get('MAILCHIMP_API_KEY');
   
@@ -24,7 +26,24 @@ async function addToMailchimp(email: string, fullName: string, listingUrl: strin
   }
 
   const url = `https://${datacenter}.api.mailchimp.com/3.0/lists/${audienceId}/members`;
-  console.log('Attempting to add member to Mailchimp...');
+  
+  const [firstName, ...lastNameParts] = fullName.split(' ');
+  const lastName = lastNameParts.join(' ');
+
+  const requestBody = {
+    email_address: email,
+    status: "subscribed",
+    merge_fields: {
+      FNAME: firstName || '',
+      LNAME: lastName || '',
+      MMERGE3: listingUrl // Using MMERGE3 for the listing URL
+    }
+  };
+
+  console.log('Sending request to Mailchimp:', {
+    url,
+    requestBody: JSON.stringify(requestBody)
+  });
 
   try {
     const response = await fetch(url, {
@@ -33,17 +52,14 @@ async function addToMailchimp(email: string, fullName: string, listingUrl: strin
         'Authorization': `Basic ${btoa(`anystring:${apiKey}`)}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        email_address: email,
-        status: 'subscribed',
-        merge_fields: {
-          FNAME: fullName,
-          URL: listingUrl,
-        },
-      }),
+      body: JSON.stringify(requestBody)
     });
 
     const data = await response.json();
+    console.log('Mailchimp API response:', {
+      status: response.status,
+      data: data
+    });
     
     if (!response.ok) {
       console.error('Mailchimp API error:', {
@@ -86,45 +102,46 @@ serve(async (req) => {
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       );
 
-      console.log('Storing payment data in Supabase...');
+      console.log('Retrieving analysis request data from database...');
       
-      // Store the form data in Supabase
-      const { data: insertData, error: insertError } = await supabaseClient
+      // Get the form data from the database
+      const { data: requestData, error: fetchError } = await supabaseClient
         .from('listing_analysis_requests')
-        .insert({
-          listing_url: session.metadata?.listing_url,
-          platform: session.metadata?.platform,
-          full_name: session.metadata?.full_name,
-          email: session.metadata?.email,
-          payment_status: 'completed',
-          stripe_session_id: session_id,
-          stripe_payment_id: session.payment_intent as string,
-        })
-        .select()
+        .select('*')
+        .eq('stripe_session_id', session_id)
         .single();
 
-      if (insertError) {
-        console.error('Error inserting data:', insertError);
-        throw new Error('Failed to store analysis request');
+      if (fetchError || !requestData) {
+        console.error('Error fetching analysis request:', fetchError);
+        throw new Error('Failed to fetch analysis request data');
       }
 
-      console.log('Payment data stored successfully');
+      console.log('Analysis request data retrieved:', requestData);
+
+      // Update the payment status
+      const { error: updateError } = await supabaseClient
+        .from('listing_analysis_requests')
+        .update({
+          payment_status: 'completed',
+          stripe_payment_id: session.payment_intent as string,
+        })
+        .eq('id', requestData.id);
+
+      if (updateError) {
+        console.error('Error updating payment status:', updateError);
+        throw new Error('Failed to update payment status');
+      }
 
       // Add user to Mailchimp
-      if (insertData) {
-        console.log('Adding user to Mailchimp...');
-        try {
-          await addToMailchimp(
-            insertData.email,
-            insertData.full_name,
-            insertData.listing_url
-          );
-          console.log('User added to Mailchimp successfully');
-        } catch (mailchimpError) {
-          console.error('Mailchimp error:', mailchimpError);
-          // Continue with the success response even if Mailchimp fails
-          // We don't want to block the user's success page if Mailchimp has issues
-        }
+      try {
+        await addToMailchimp(
+          requestData.email,
+          requestData.full_name,
+          requestData.listing_url
+        );
+      } catch (mailchimpError) {
+        // Log the error but don't throw it - we don't want to block the success response
+        console.error('Mailchimp integration error:', mailchimpError);
       }
 
       return new Response(
@@ -144,7 +161,7 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error('Error updating payment status:', error);
+    console.error('Error processing payment status:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
