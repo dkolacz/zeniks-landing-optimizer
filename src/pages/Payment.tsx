@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 const Payment = () => {
@@ -21,13 +21,13 @@ const Payment = () => {
         description: "Please fill out the analysis request form first.",
         variant: "destructive",
       });
-      navigate("/request-analysis");
+      navigate("/request-analysis", { replace: true });
       return;
     }
     if (data) {
       setFormData(JSON.parse(data));
     }
-  }, [navigate, toast]);
+  }, [navigate, toast, sessionId]);
 
   useEffect(() => {
     const handlePaymentStatus = async () => {
@@ -40,7 +40,6 @@ const Payment = () => {
           if (error) throw error;
 
           if (data.status === 'paid') {
-            // Clear localStorage and redirect to success page
             localStorage.removeItem("analysisRequest");
             navigate(`/success?session_id=${sessionId}`, { replace: true });
           } else {
@@ -95,7 +94,7 @@ const Payment = () => {
     }
   };
 
-  // Only show payment form if we have form data and no session ID
+  // Only show payment form if we have form data and no session ID or status
   if (!sessionId && !status && formData) {
     return (
       <div className="min-h-screen bg-zeniks-gray-light py-12">
