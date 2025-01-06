@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import RequestAnalysis from "./pages/RequestAnalysis";
 import Payment from "./pages/Payment";
 import Success from "./pages/Success";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ const App = () => (
           <Route path="/request-analysis" element={<RequestAnalysis />} />
           <Route path="/payment" element={<Payment />} />
           <Route path="/success" element={<Success />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

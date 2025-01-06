@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 const Footer = () => {
   return (
     <footer id="contact" className="bg-zeniks-gray-blue py-12">
@@ -43,12 +45,12 @@ const Footer = () => {
             <h4 className="font-semibold text-zeniks-purple mb-4">Legal</h4>
             <ul className="space-y-2">
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/privacy-policy"
                   className="text-zeniks-gray-dark hover:text-zeniks-purple transition-colors"
                 >
                   Privacy Policy
-                </a>
+                </Link>
               </li>
               <li>
                 <a
