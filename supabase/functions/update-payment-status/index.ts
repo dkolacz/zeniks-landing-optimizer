@@ -9,6 +9,7 @@ const corsHeaders = {
 
 async function addToMailerLite(email: string, fullName: string, listingUrl: string, platform: string) {
   const apiKey = Deno.env.get('MAILERLITE_API_KEY');
+  const groupId = "142779501276824694"; // Adding the specific group ID
 
   if (!apiKey) {
     console.error('MailerLite API key not configured');
@@ -30,6 +31,7 @@ async function addToMailerLite(email: string, fullName: string, listingUrl: stri
           listing_url: listingUrl,
           platform: platform
         },
+        groups: [groupId], // Adding subscriber to the specific group
         status: 'active'
       }),
     });
