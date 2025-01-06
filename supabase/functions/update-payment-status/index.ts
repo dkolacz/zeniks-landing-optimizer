@@ -7,43 +7,41 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-async function addToMailchimp(email: string, fullName: string, listingUrl: string) {
-  const audienceId = "91ede30ac7";
-  const dataCenter = Deno.env.get('MAILCHIMP_API_KEY')?.split('-')[1];
-  const apiKey = Deno.env.get('MAILCHIMP_API_KEY');
+async function addToMailerLite(email: string, fullName: string, listingUrl: string, platform: string) {
+  const apiKey = Deno.env.get('MAILERLITE_API_KEY');
 
-  if (!apiKey || !dataCenter) {
-    console.error('Mailchimp API key not configured');
+  if (!apiKey) {
+    console.error('MailerLite API key not configured');
     return;
   }
 
-  const url = `https://${dataCenter}.api.mailchimp.com/3.0/lists/${audienceId}/members`;
-
   try {
-    const response = await fetch(url, {
+    const response = await fetch('https://connect.mailerlite.com/api/subscribers', {
       method: 'POST',
       headers: {
-        'Authorization': `apikey ${apiKey}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       body: JSON.stringify({
-        email_address: email,
-        status: 'subscribed',
-        merge_fields: {
-          FNAME: fullName,
-          URL: listingUrl,
+        email: email,
+        fields: {
+          name: fullName,
+          listing_url: listingUrl,
+          platform: platform
         },
+        status: 'active'
       }),
     });
 
     const data = await response.json();
-    console.log('Mailchimp response:', data);
+    console.log('MailerLite response:', data);
 
     if (!response.ok) {
-      throw new Error(`Failed to add to Mailchimp: ${data.detail}`);
+      throw new Error(`Failed to add to MailerLite: ${JSON.stringify(data)}`);
     }
   } catch (error) {
-    console.error('Error adding to Mailchimp:', error);
+    console.error('Error adding to MailerLite:', error);
     // We don't throw here to avoid breaking the payment flow
   }
 }
@@ -89,11 +87,12 @@ serve(async (req) => {
         throw new Error('Failed to store analysis request');
       }
 
-      // Add user to Mailchimp after successful payment and database update
-      await addToMailchimp(
+      // Add user to MailerLite after successful payment and database update
+      await addToMailerLite(
         session.metadata?.email || '',
         session.metadata?.full_name || '',
-        session.metadata?.listing_url || ''
+        session.metadata?.listing_url || '',
+        session.metadata?.platform || ''
       );
 
       return new Response(
