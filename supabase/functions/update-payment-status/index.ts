@@ -7,6 +7,47 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+async function addToMailchimp(email: string, firstName: string, lastName: string) {
+  const audienceId = "438265";
+  const dataCenter = Deno.env.get('MAILCHIMP_API_KEY')?.split('-')[1];
+  const apiKey = Deno.env.get('MAILCHIMP_API_KEY');
+
+  if (!apiKey || !dataCenter) {
+    console.error('Mailchimp API key not configured');
+    return;
+  }
+
+  const url = `https://${dataCenter}.api.mailchimp.com/3.0/lists/${audienceId}/members`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `apikey ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email_address: email,
+        status: 'subscribed',
+        merge_fields: {
+          FNAME: firstName,
+          LNAME: lastName,
+        },
+      }),
+    });
+
+    const data = await response.json();
+    console.log('Mailchimp response:', data);
+
+    if (!response.ok) {
+      throw new Error(`Failed to add to Mailchimp: ${data.detail}`);
+    }
+  } catch (error) {
+    console.error('Error adding to Mailchimp:', error);
+    // We don't throw here to avoid breaking the payment flow
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -45,6 +86,18 @@ serve(async (req) => {
         console.error('Error inserting data:', insertError);
         throw new Error('Failed to store analysis request');
       }
+
+      // Split full name into first and last name for Mailchimp
+      const fullName = session.metadata?.full_name || '';
+      const [firstName, ...lastNameParts] = fullName.split(' ');
+      const lastName = lastNameParts.join(' ');
+
+      // Add user to Mailchimp
+      await addToMailchimp(
+        session.metadata?.email || '',
+        firstName || '',
+        lastName || ''
+      );
 
       return new Response(
         JSON.stringify({ status: 'paid' }),
