@@ -53,12 +53,12 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/terms"
                   className="text-zeniks-gray-dark hover:text-zeniks-purple transition-colors"
                 >
-                  Terms of Service
-                </a>
+                  Terms and Conditions
+                </Link>
               </li>
             </ul>
           </div>

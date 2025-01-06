@@ -1,6 +1,7 @@
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Control } from "react-hook-form";
+import { Link } from "react-router-dom";
 
 interface TermsCheckboxProps {
   control: Control<any>;
@@ -22,13 +23,13 @@ export const TermsCheckbox = ({ control }: TermsCheckboxProps) => {
           <div className="space-y-1 leading-none">
             <FormLabel>
               I agree to the{" "}
-              <a
-                href="/terms"
+              <Link
+                to="/terms"
                 target="_blank"
                 className="text-zeniks-purple hover:underline"
               >
                 Terms and Conditions
-              </a>
+              </Link>
             </FormLabel>
             <FormMessage />
           </div>
