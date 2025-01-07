@@ -66,19 +66,19 @@ const RequestForm = () => {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-xl mx-auto">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <FormFields control={form.control} />
         <TermsCheckbox control={form.control} />
 
         <Button
           type="submit"
-          className="w-full bg-zeniks-purple hover:bg-opacity-90 text-white"
+          className="w-full bg-zeniks-purple hover:bg-opacity-90 text-white py-6"
         >
-          <DollarSign className="mr-2 h-4 w-4" />
+          <DollarSign className="mr-2 h-5 w-5" />
           Pay $49 Now
         </Button>
 
-        <p className="text-sm text-zeniks-gray-dark text-center mt-4">
+        <p className="text-sm text-zeniks-gray-dark text-center">
           We respect your privacy and will only use your information to
           process your analysis request and send you your report.
         </p>
