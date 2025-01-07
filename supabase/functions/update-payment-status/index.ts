@@ -9,7 +9,7 @@ const corsHeaders = {
 
 async function addToMailerLite(email: string, fullName: string, listingUrl: string, platform: string) {
   const apiKey = Deno.env.get('MAILERLITE_API_KEY');
-  const groupId = "142779501276824694"; // Adding the specific group ID
+  const groupId = "142779501276824694";
 
   if (!apiKey) {
     console.error('MailerLite API key not configured');
@@ -17,6 +17,8 @@ async function addToMailerLite(email: string, fullName: string, listingUrl: stri
   }
 
   try {
+    console.log('Attempting to add subscriber to MailerLite:', { email, fullName, listingUrl, platform });
+    
     const response = await fetch('https://connect.mailerlite.com/api/subscribers', {
       method: 'POST',
       headers: {
@@ -31,30 +33,36 @@ async function addToMailerLite(email: string, fullName: string, listingUrl: stri
           listing_url: listingUrl,
           platform: platform
         },
-        groups: [groupId], // Adding subscriber to the specific group
+        groups: [groupId],
         status: 'active'
       }),
     });
 
     const data = await response.json();
-    console.log('MailerLite response:', data);
-
+    
     if (!response.ok) {
-      throw new Error(`Failed to add to MailerLite: ${JSON.stringify(data)}`);
+      console.error('MailerLite API error:', data);
+      throw new Error(`MailerLite API error: ${JSON.stringify(data)}`);
     }
+    
+    console.log('Successfully added subscriber to MailerLite:', data);
+    return data;
   } catch (error) {
     console.error('Error adding to MailerLite:', error);
     // We don't throw here to avoid breaking the payment flow
+    return null;
   }
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const { session_id } = await req.json();
+    console.log('Processing payment status for session:', session_id);
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
@@ -63,6 +71,10 @@ serve(async (req) => {
 
     // Retrieve the session
     const session = await stripe.checkout.sessions.retrieve(session_id);
+    console.log('Retrieved Stripe session:', { 
+      payment_status: session.payment_status,
+      customer_email: session.customer_email
+    });
     
     if (session.payment_status === 'paid') {
       // Create Supabase client
@@ -88,6 +100,8 @@ serve(async (req) => {
         console.error('Error inserting data:', insertError);
         throw new Error('Failed to store analysis request');
       }
+
+      console.log('Successfully stored analysis request in database');
 
       // Add user to MailerLite after successful payment and database update
       await addToMailerLite(
