@@ -4,6 +4,8 @@ import { ScrollText } from "lucide-react";
 const Terms = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
+    document.title = "Terms of Service | Zeniks";
+    document.querySelector('meta[name="description"]')?.setAttribute("content", "Read Zeniks Terms and Conditions to understand your rights and obligations when using our website and services.");
   }, []);
 
   return (

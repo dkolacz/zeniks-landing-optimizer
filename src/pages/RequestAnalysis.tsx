@@ -5,6 +5,8 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 const RequestAnalysis = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
+    document.title = "Get Your Personalized Listing Report | Zeniks";
+    document.querySelector('meta[name="description"]')?.setAttribute("content", "Ready to optimize your listing? Request your AI-powered Zeniks analysis today. Simply enter your listing details and get ready to improve your performance.");
   }, []);
 
   return (

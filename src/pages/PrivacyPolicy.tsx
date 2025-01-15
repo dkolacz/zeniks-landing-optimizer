@@ -1,6 +1,13 @@
+import { useEffect } from "react";
 import { Shield } from "lucide-react";
 
 const PrivacyPolicy = () => {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    document.title = "Privacy Policy | Zeniks";
+    document.querySelector('meta[name="description"]')?.setAttribute("content", "Read Zeniks Privacy Policy to understand how we collect, use, and protect your personal information. Your privacy is our priority.");
+  }, []);
+
   return (
     <div className="min-h-screen bg-zeniks-gray-light">
       <div className="max-w-4xl mx-auto px-4 py-12">
