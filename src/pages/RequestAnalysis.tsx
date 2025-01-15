@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import RequestForm from "@/components/analysis-request/RequestForm";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import Image from "@/components/ui/image";
 
 const RequestAnalysis = () => {
   useEffect(() => {
@@ -15,11 +14,10 @@ const RequestAnalysis = () => {
           <div className="flex justify-center mb-6">
             <div className="w-32">
               <AspectRatio ratio={3/1}>
-                <Image
+                <img
                   src="/lovable-uploads/bed86774-1164-422a-bd44-7697b6139ab8.png"
                   alt="Zeniks Logo"
-                  className="object-contain"
-                  fill
+                  className="object-contain w-full h-full"
                 />
               </AspectRatio>
             </div>
