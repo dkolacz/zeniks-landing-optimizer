@@ -29,11 +29,11 @@ const Navbar = () => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
-          <div className="flex-shrink-0 flex items-center space-x-3">
+          <div className="flex-shrink-0 flex items-center space-x-2">
             <img 
               src="/lovable-uploads/bed86774-1164-422a-bd44-7697b6139ab8.png" 
               alt="Zeniks Logo" 
-              className="h-10 w-auto"
+              className="h-8 w-auto"
             />
             <span className="text-2xl font-bold text-zeniks-purple">Zeniks</span>
           </div>

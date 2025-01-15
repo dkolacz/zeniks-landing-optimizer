@@ -6,14 +6,7 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <div>
-            <div className="flex items-center space-x-3 mb-4">
-              <img 
-                src="/lovable-uploads/bed86774-1164-422a-bd44-7697b6139ab8.png" 
-                alt="Zeniks Logo" 
-                className="h-10 w-auto"
-              />
-              <h3 className="text-2xl font-bold text-zeniks-purple">Zeniks</h3>
-            </div>
+            <h3 className="text-2xl font-bold text-zeniks-purple mb-4">Zeniks</h3>
             <p className="text-zeniks-gray-dark">
               Empowering hosts to maximize their rental potential through AI-driven
               insights.
