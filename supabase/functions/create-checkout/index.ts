@@ -13,13 +13,15 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Processing checkout request...');
+    console.log('Starting checkout process...');
     const { listingUrl, platform, fullName, email, requestId } = await req.json();
 
     if (!requestId) {
       console.error('No request ID provided');
       throw new Error('Request ID is required');
     }
+
+    console.log('Request data:', { listingUrl, platform, fullName, email, requestId });
 
     // Initialize Stripe with the secret key from environment variables
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
@@ -29,6 +31,13 @@ serve(async (req) => {
     console.log('Creating payment session...');
     const session = await stripe.checkout.sessions.create({
       customer_email: email,
+      metadata: {
+        request_id: requestId,
+        listing_url: listingUrl,
+        platform,
+        full_name: fullName,
+        email,
+      },
       line_items: [
         {
           price_data: {
@@ -44,14 +53,7 @@ serve(async (req) => {
       ],
       mode: 'payment',
       success_url: `${req.headers.get('origin')}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get('origin')}/request-analysis`,
-      metadata: {
-        request_id: requestId,
-        listing_url: listingUrl,
-        platform,
-        full_name: fullName,
-        email,
-      },
+      cancel_url: `${req.headers.get('origin')}/payment?status=cancelled`,
     });
 
     console.log('Payment session created:', session.id);

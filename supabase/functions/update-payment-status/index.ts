@@ -14,31 +14,34 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Starting payment status update process...');
     const { session_id } = await req.json();
-    console.log('Processing payment status update for session:', session_id);
-
+    
     if (!session_id) {
+      console.error('No session_id provided in request');
       throw new Error('Session ID is required');
     }
+
+    console.log('Processing session:', session_id);
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
       apiVersion: '2023-10-16',
     });
 
-    // Retrieve the session and payment details
+    // Retrieve the session with expanded payment_intent
     const session = await stripe.checkout.sessions.retrieve(session_id, {
-      expand: ['payment_intent']
+      expand: ['payment_intent'],
     });
 
-    console.log('Retrieved Stripe session:', { 
-      payment_status: session.payment_status,
-      metadata: session.metadata,
-      payment_intent: session.payment_intent
-    });
+    console.log('Retrieved session status:', session.payment_status);
+    console.log('Session metadata:', session.metadata);
+    console.log('Payment intent:', session.payment_intent);
 
     if (session.payment_status === 'paid') {
-      // Initialize Supabase client
+      console.log('Payment confirmed as paid, updating database...');
+      
+      // Initialize Supabase client with service role key for full access
       const supabaseClient = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -49,36 +52,40 @@ serve(async (req) => {
         throw new Error('No request_id found in session metadata');
       }
 
+      // Get payment intent ID
       const paymentIntentId = typeof session.payment_intent === 'string' 
         ? session.payment_intent 
         : session.payment_intent?.id;
 
-      console.log('Updating database with:', {
-        request_id: session.metadata.request_id,
-        session_id: session.id,
-        payment_intent_id: paymentIntentId
+      console.log('Updating database for request:', session.metadata.request_id);
+      console.log('Update data:', {
+        payment_status: 'completed',
+        status: 'paid',
+        stripe_session_id: session.id,
+        stripe_payment_id: paymentIntentId,
       });
 
-      // Update the analysis request with all required fields
-      const { error: updateError } = await supabaseClient
+      // Update the analysis request
+      const { data: updateData, error: updateError } = await supabaseClient
         .from('listing_analysis_requests')
         .update({
           payment_status: 'completed',
           status: 'paid',
           stripe_session_id: session.id,
-          stripe_payment_id: paymentIntentId
+          stripe_payment_id: paymentIntentId,
         })
-        .eq('id', session.metadata.request_id);
+        .eq('id', session.metadata.request_id)
+        .select();
 
       if (updateError) {
-        console.error('Error updating payment status:', updateError);
+        console.error('Database update error:', updateError);
         throw new Error(`Failed to update payment status: ${updateError.message}`);
       }
 
-      console.log('Successfully updated payment status in database for request:', session.metadata.request_id);
+      console.log('Database update successful:', updateData);
 
       return new Response(
-        JSON.stringify({ status: 'paid' }),
+        JSON.stringify({ status: 'paid', data: updateData }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
@@ -86,6 +93,7 @@ serve(async (req) => {
       );
     }
 
+    console.log('Payment not yet paid, status:', session.payment_status);
     return new Response(
       JSON.stringify({ status: session.payment_status }),
       { 
