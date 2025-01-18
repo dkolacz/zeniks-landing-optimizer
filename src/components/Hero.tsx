@@ -5,16 +5,27 @@ const Hero = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="relative min-h-screen flex items-center bg-gradient-to-br from-zeniks-gray-light via-white to-zeniks-blue/20">
-      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
+    <div className="relative min-h-screen">
+      {/* Hero Image Container */}
+      <div className="absolute inset-0">
+        <img
+          src="/lovable-uploads/6aa104f1-5b0f-4194-9684-9009742b1ead.png"
+          alt="Luxury vacation rental with infinity pool"
+          className="w-full h-full object-cover rounded-b-[40px]"
+        />
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-black/40 rounded-b-[40px]"></div>
+      </div>
+
+      {/* Content */}
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
         <div className="text-center">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-zeniks-purple mb-6">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6">
             Unlock Your Rental's
             <br />
             Full Potential
           </h1>
-          <p className="text-xl md:text-2xl text-zeniks-gray-dark max-w-3xl mx-auto mb-8">
+          <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto mb-8">
             Get an AI-powered analysis of your Airbnb, Vrbo, Booking.com or direct
             website listing
           </p>
@@ -26,7 +37,7 @@ const Hero = () => {
               Analyze My Listing
               <ArrowRight className="group-hover:translate-x-1 transition-transform" />
             </button>
-            <span className="text-zeniks-gray-dark text-lg font-medium">
+            <span className="text-white text-lg font-medium">
               Just $49 per analysis
             </span>
           </div>
