@@ -44,20 +44,21 @@ const Payment = () => {
             navigate(`/success?session_id=${sessionId}`, { replace: true });
           } else {
             toast({
-              title: "Payment Failed",
-              description: "There was an issue processing your payment. Please try again.",
-              variant: "destructive",
+              title: "Payment Processing",
+              description: "Your payment is being processed. Please wait...",
             });
-            navigate("/request-analysis", { replace: true });
+            // Check again in 2 seconds
+            setTimeout(() => {
+              handlePaymentStatus();
+            }, 2000);
           }
         } catch (error) {
           console.error('Error updating payment status:', error);
           toast({
             title: "Error",
-            description: "There was an issue processing your payment. Please try again.",
+            description: "There was an issue processing your payment. Please contact support.",
             variant: "destructive",
           });
-          navigate("/request-analysis", { replace: true });
         }
       } else if (status === 'cancelled') {
         toast({
@@ -162,7 +163,18 @@ const Payment = () => {
   }
 
   // Show loading state while checking payment status
-  return null;
+  return (
+    <div className="min-h-screen bg-zeniks-gray-light py-12 flex items-center justify-center">
+      <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 text-center">
+        <h2 className="text-2xl font-bold text-zeniks-purple mb-4">
+          Processing Your Payment
+        </h2>
+        <p className="text-zeniks-gray-dark">
+          Please wait while we confirm your payment...
+        </p>
+      </div>
+    </div>
+  );
 };
 
 export default Payment;

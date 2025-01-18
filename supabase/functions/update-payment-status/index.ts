@@ -65,11 +65,18 @@ serve(async (req) => {
 
       // Add subscriber to MailerLite
       try {
-        console.log('Adding subscriber to MailerLite...');
-        const response = await fetch('https://connect.mailerlite.com/api/subscribers', {
+        console.log('Adding subscriber to MailerLite with data:', {
+          email: requestData.email,
+          name: requestData.full_name,
+          platform: requestData.platform,
+          listing_url: requestData.listing_url
+        });
+
+        const mailerLiteResponse = await fetch('https://connect.mailerlite.com/api/subscribers', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
             'Authorization': `Bearer ${Deno.env.get('MAILERLITE_API_KEY')}`,
           },
           body: JSON.stringify({
@@ -83,28 +90,33 @@ serve(async (req) => {
           }),
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error('MailerLite API error:', errorData);
+        const responseText = await mailerLiteResponse.text();
+        console.log('MailerLite raw response:', responseText);
+
+        if (!mailerLiteResponse.ok) {
+          console.error('MailerLite API error:', {
+            status: mailerLiteResponse.status,
+            statusText: mailerLiteResponse.statusText,
+            response: responseText
+          });
           throw new Error('Failed to add subscriber to MailerLite');
         }
 
-        const data = await response.json();
-        console.log('Successfully added subscriber to MailerLite:', data);
+        console.log('Successfully added subscriber to MailerLite');
       } catch (error) {
         console.error('Error adding subscriber to MailerLite:', error);
         // We don't throw here to not break the payment flow
       }
 
       return new Response(
-        JSON.stringify({ success: true }),
+        JSON.stringify({ status: 'paid' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     return new Response(
-      JSON.stringify({ error: 'Payment not completed' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      JSON.stringify({ status: session.payment_status }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
