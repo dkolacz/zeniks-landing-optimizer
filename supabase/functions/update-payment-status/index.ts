@@ -15,7 +15,7 @@ serve(async (req) => {
 
   try {
     const { session_id } = await req.json();
-    console.log('Processing payment status for session:', session_id);
+    console.log('Processing payment status update for session:', session_id);
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
@@ -36,9 +36,19 @@ serve(async (req) => {
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       );
 
-      console.log('Updating database record...');
-      
-      // Update the database record
+      // Get the customer data from the database
+      const { data: requestData, error: fetchError } = await supabaseClient
+        .from('listing_analysis_requests')
+        .select('*')
+        .eq('stripe_session_id', session_id)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching request data:', fetchError);
+        throw new Error('Failed to fetch request data');
+      }
+
+      // Update payment status in database
       const { error: updateError } = await supabaseClient
         .from('listing_analysis_requests')
         .update({
@@ -49,36 +59,59 @@ serve(async (req) => {
         .eq('stripe_session_id', session_id);
 
       if (updateError) {
-        console.error('Error updating database:', updateError);
-        throw new Error('Failed to update analysis request');
+        console.error('Error updating payment status:', updateError);
+        throw new Error('Failed to update payment status');
       }
 
-      console.log('Successfully updated database record');
+      // Add subscriber to MailerLite
+      try {
+        console.log('Adding subscriber to MailerLite...');
+        const response = await fetch('https://connect.mailerlite.com/api/subscribers', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${Deno.env.get('MAILERLITE_API_KEY')}`,
+          },
+          body: JSON.stringify({
+            email: requestData.email,
+            fields: {
+              name: requestData.full_name,
+              platform: requestData.platform,
+              listing_url: requestData.listing_url
+            },
+            groups: ['98402686150123456'] // Replace with your actual group ID
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('MailerLite API error:', errorData);
+          throw new Error('Failed to add subscriber to MailerLite');
+        }
+
+        const data = await response.json();
+        console.log('Successfully added subscriber to MailerLite:', data);
+      } catch (error) {
+        console.error('Error adding subscriber to MailerLite:', error);
+        // We don't throw here to not break the payment flow
+      }
 
       return new Response(
-        JSON.stringify({ status: 'paid' }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
+        JSON.stringify({ success: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     return new Response(
-      JSON.stringify({ status: session.payment_status }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
+      JSON.stringify({ error: 'Payment not completed' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
     );
+
   } catch (error) {
-    console.error('Error processing payment status:', error);
+    console.error('Error processing webhook:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
 });
