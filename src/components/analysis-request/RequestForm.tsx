@@ -11,9 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   listingUrl: z.string().url("Please enter a valid URL"),
-  platform: z.string({
-    required_error: "Please select a platform",
-  }),
+  platform: z.string(),
   fullName: z
     .string()
     .min(2, "Name must be at least 2 characters")
@@ -24,13 +22,21 @@ const formSchema = z.object({
   }),
 });
 
+const determinePlatform = (url: string): string => {
+  const lowerUrl = url.toLowerCase();
+  if (lowerUrl.includes('airbnb')) return 'airbnb';
+  if (lowerUrl.includes('vrbo')) return 'vrbo';
+  if (lowerUrl.includes('www.booking')) return 'booking';
+  return 'own';
+};
+
 const RequestForm = () => {
   const { toast } = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       listingUrl: "",
-      platform: "",
+      platform: "own",
       fullName: "",
       email: "",
       terms: false,
@@ -39,12 +45,16 @@ const RequestForm = () => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      // Determine platform from URL
+      const platform = determinePlatform(values.listingUrl);
+      const formData = { ...values, platform };
+
       // Store form data in localStorage for the payment page
-      localStorage.setItem("analysisRequest", JSON.stringify(values));
+      localStorage.setItem("analysisRequest", JSON.stringify(formData));
       
       // Create checkout session using Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: values
+        body: formData
       });
 
       if (error || !data?.url) {
