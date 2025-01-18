@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { listingUrl, platform, fullName, email, requestId } = await req.json();
+    const { listingUrl, platform, fullName, email } = await req.json();
 
     // Initialize Stripe with the secret key from environment variables
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
@@ -44,25 +44,8 @@ serve(async (req) => {
         platform,
         full_name: fullName,
         email,
-        request_id: requestId
       },
     });
-
-    // Update the stripe_session_id in the database
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    );
-
-    const { error: updateError } = await supabaseClient
-      .from('listing_analysis_requests')
-      .update({ stripe_session_id: session.id })
-      .eq('id', requestId);
-
-    if (updateError) {
-      console.error('Error updating stripe_session_id:', updateError);
-      throw new Error('Failed to update stripe session ID');
-    }
 
     console.log('Payment session created:', session.id);
     return new Response(

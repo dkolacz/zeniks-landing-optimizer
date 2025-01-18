@@ -18,7 +18,6 @@ export type Database = {
           listing_url: string
           payment_status: string
           platform: string
-          status: string
           stripe_payment_id: string | null
           stripe_session_id: string | null
         }
@@ -30,7 +29,6 @@ export type Database = {
           listing_url: string
           payment_status?: string
           platform: string
-          status?: string
           stripe_payment_id?: string | null
           stripe_session_id?: string | null
         }
@@ -42,7 +40,6 @@ export type Database = {
           listing_url?: string
           payment_status?: string
           platform?: string
-          status?: string
           stripe_payment_id?: string | null
           stripe_session_id?: string | null
         }
