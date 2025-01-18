@@ -81,7 +81,7 @@ const RequestForm = () => {
               Processing...
             </>
           ) : (
-            'Pay 49 Now'
+            'Proceed to Payment - $49'
           )}
         </Button>
 
