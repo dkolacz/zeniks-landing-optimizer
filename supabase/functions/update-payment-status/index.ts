@@ -30,7 +30,8 @@ serve(async (req) => {
     console.log('Retrieved Stripe session:', { 
       payment_status: session.payment_status,
       customer_email: session.customer_email,
-      payment_intent: session.payment_intent
+      payment_intent: session.payment_intent,
+      metadata: session.metadata
     });
     
     if (session.payment_status === 'paid') {
@@ -39,6 +40,11 @@ serve(async (req) => {
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       );
+
+      if (!session.metadata?.request_id) {
+        console.error('No request_id found in session metadata');
+        throw new Error('No request_id found in session metadata');
+      }
 
       // Update the analysis request with all required fields
       const { error: updateError } = await supabaseClient
@@ -51,14 +57,14 @@ serve(async (req) => {
             ? session.payment_intent 
             : session.payment_intent?.id
         })
-        .eq('stripe_session_id', session_id);
+        .eq('id', session.metadata.request_id);
 
       if (updateError) {
         console.error('Error updating payment status:', updateError);
         throw new Error('Failed to update payment status');
       }
 
-      console.log('Successfully updated payment status in database');
+      console.log('Successfully updated payment status in database for request:', session.metadata.request_id);
 
       return new Response(
         JSON.stringify({ status: 'paid' }),
