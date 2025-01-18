@@ -7,53 +7,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-async function addToMailerLite(email: string, fullName: string, listingUrl: string, platform: string) {
-  const apiKey = Deno.env.get('MAILERLITE_API_KEY');
-  const groupId = "142779501276824694";
-
-  if (!apiKey) {
-    console.error('MailerLite API key not configured');
-    return;
-  }
-
-  try {
-    console.log('Attempting to add subscriber to MailerLite:', { email, fullName, listingUrl, platform });
-    
-    const response = await fetch('https://connect.mailerlite.com/api/subscribers', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({
-        email: email,
-        fields: {
-          name: fullName,
-          listing_url: listingUrl,
-          platform: platform
-        },
-        groups: [groupId],
-        status: 'active'
-      }),
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      console.error('MailerLite API error:', data);
-      throw new Error(`MailerLite API error: ${JSON.stringify(data)}`);
-    }
-    
-    console.log('Successfully added subscriber to MailerLite:', data);
-    return data;
-  } catch (error) {
-    console.error('Error adding to MailerLite:', error);
-    // We don't throw here to avoid breaking the payment flow
-    return null;
-  }
-}
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -83,33 +36,25 @@ serve(async (req) => {
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       );
 
-      // Store the form data in Supabase
-      const { error: insertError } = await supabaseClient
+      console.log('Updating database record...');
+      
+      // Update the database record
+      const { error: updateError } = await supabaseClient
         .from('listing_analysis_requests')
-        .insert({
-          listing_url: session.metadata?.listing_url,
-          platform: session.metadata?.platform,
-          full_name: session.metadata?.full_name,
-          email: session.metadata?.email,
+        .update({
           payment_status: 'completed',
+          status: 'paid', // Set status to 'paid'
           stripe_session_id: session_id,
           stripe_payment_id: session.payment_intent as string,
-        });
+        })
+        .eq('stripe_session_id', session_id);
 
-      if (insertError) {
-        console.error('Error inserting data:', insertError);
-        throw new Error('Failed to store analysis request');
+      if (updateError) {
+        console.error('Error updating database:', updateError);
+        throw new Error('Failed to update analysis request');
       }
 
-      console.log('Successfully stored analysis request in database');
-
-      // Add user to MailerLite after successful payment and database update
-      await addToMailerLite(
-        session.metadata?.email || '',
-        session.metadata?.full_name || '',
-        session.metadata?.listing_url || '',
-        session.metadata?.platform || ''
-      );
+      console.log('Successfully updated database record');
 
       return new Response(
         JSON.stringify({ status: 'paid' }),
