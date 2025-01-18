@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { DollarSign } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
@@ -73,9 +73,16 @@ const RequestForm = () => {
         <Button
           type="submit"
           className="w-full bg-zeniks-purple hover:bg-opacity-90 text-white"
+          disabled={form.formState.isSubmitting}
         >
-          <DollarSign className="mr-2 h-4 w-4" />
-          Pay $49 Now
+          {form.formState.isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            'Pay 49 Now'
+          )}
         </Button>
 
         <p className="text-sm text-zeniks-gray-dark text-center mt-4">
