@@ -26,11 +26,11 @@ serve(async (req) => {
     const session = await stripe.checkout.sessions.retrieve(session_id);
     console.log('Retrieved Stripe session:', { 
       payment_status: session.payment_status,
-      customer_email: session.customer_email
+      metadata: session.metadata
     });
     
     if (session.payment_status === 'paid') {
-      // Create Supabase client
+      // Initialize Supabase client
       const supabaseClient = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -43,8 +43,7 @@ serve(async (req) => {
         .from('listing_analysis_requests')
         .update({
           payment_status: 'completed',
-          status: 'paid', // Set status to 'paid'
-          stripe_session_id: session_id,
+          status: 'paid',
           stripe_payment_id: session.payment_intent as string,
         })
         .eq('stripe_session_id', session_id);
