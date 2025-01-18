@@ -66,7 +66,7 @@ serve(async (req) => {
             platform: requestData.platform,
             listing_url: requestData.listing_url
           },
-          groups: ['98402686150123456'] // Replace with your actual group ID
+          groups: ['142779501276824694'] // Updated with the correct group ID
         };
         
         console.log('Sending data to MailerLite:', JSON.stringify(subscriberData, null, 2));
