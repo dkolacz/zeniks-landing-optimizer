@@ -28,49 +28,48 @@ serve(async (req) => {
       payment_status: session.payment_status,
       metadata: session.metadata
     });
-    
+
+    // Initialize Supabase client
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    );
+
     if (session.payment_status === 'paid') {
-      // Initialize Supabase client
-      const supabaseClient = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      );
-
-      // Get the customer data from the database
-      const { data: requestData, error: fetchError } = await supabaseClient
-        .from('listing_analysis_requests')
-        .select('*')
-        .eq('stripe_session_id', session_id)
-        .single();
-
-      if (fetchError) {
-        console.error('Error fetching request data:', fetchError);
-        throw new Error('Failed to fetch request data');
-      }
-
       // Update payment status in database
-      const { error: updateError } = await supabaseClient
+      const { data: requestData, error: updateError } = await supabaseClient
         .from('listing_analysis_requests')
         .update({
           payment_status: 'completed',
           status: 'paid',
           stripe_payment_id: session.payment_intent as string,
         })
-        .eq('stripe_session_id', session_id);
+        .eq('stripe_session_id', session_id)
+        .select()
+        .single();
 
       if (updateError) {
         console.error('Error updating payment status:', updateError);
         throw new Error('Failed to update payment status');
       }
 
+      console.log('Payment status updated successfully:', requestData);
+
       // Add subscriber to MailerLite
       try {
-        console.log('Adding subscriber to MailerLite with data:', {
+        console.log('Starting MailerLite integration...');
+        
+        const subscriberData = {
           email: requestData.email,
-          name: requestData.full_name,
-          platform: requestData.platform,
-          listing_url: requestData.listing_url
-        });
+          fields: {
+            name: requestData.full_name,
+            platform: requestData.platform,
+            listing_url: requestData.listing_url
+          },
+          groups: ['98402686150123456'] // Replace with your actual group ID
+        };
+        
+        console.log('Sending data to MailerLite:', JSON.stringify(subscriberData, null, 2));
 
         const mailerLiteResponse = await fetch('https://connect.mailerlite.com/api/subscribers', {
           method: 'POST',
@@ -79,15 +78,7 @@ serve(async (req) => {
             'Accept': 'application/json',
             'Authorization': `Bearer ${Deno.env.get('MAILERLITE_API_KEY')}`,
           },
-          body: JSON.stringify({
-            email: requestData.email,
-            fields: {
-              name: requestData.full_name,
-              platform: requestData.platform,
-              listing_url: requestData.listing_url
-            },
-            groups: ['98402686150123456'] // Replace with your actual group ID
-          }),
+          body: JSON.stringify(subscriberData),
         });
 
         const responseText = await mailerLiteResponse.text();
@@ -97,14 +88,15 @@ serve(async (req) => {
           console.error('MailerLite API error:', {
             status: mailerLiteResponse.status,
             statusText: mailerLiteResponse.statusText,
-            response: responseText
+            response: responseText,
+            requestData: subscriberData
           });
           throw new Error('Failed to add subscriber to MailerLite');
         }
 
         console.log('Successfully added subscriber to MailerLite');
       } catch (error) {
-        console.error('Error adding subscriber to MailerLite:', error);
+        console.error('Error in MailerLite integration:', error);
         // We don't throw here to not break the payment flow
       }
 
