@@ -46,6 +46,14 @@ const Footer = () => {
             <ul className="space-y-2">
               <li>
                 <Link
+                  to="/about"
+                  className="text-zeniks-gray-dark hover:text-zeniks-purple transition-colors"
+                >
+                  About Us
+                </Link>
+              </li>
+              <li>
+                <Link
                   to="/privacy-policy"
                   className="text-zeniks-gray-dark hover:text-zeniks-purple transition-colors"
                 >
