@@ -39,12 +39,31 @@ const RequestForm = () => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      // Store form data in localStorage for the payment page
-      localStorage.setItem("analysisRequest", JSON.stringify(values));
-      
+      // First, insert the analysis request into the database
+      const { data: insertData, error: insertError } = await supabase
+        .from('listing_analysis_requests')
+        .insert([{
+          listing_url: values.listingUrl,
+          platform: values.platform,
+          full_name: values.fullName,
+          email: values.email,
+          status: 'requested',
+          payment_status: 'pending'
+        }])
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Database insertion error:', insertError);
+        throw new Error(insertError.message);
+      }
+
       // Create checkout session using Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: values
+        body: {
+          ...values,
+          requestId: insertData.id // Pass the request ID to link the payment
+        }
       });
 
       if (error || !data?.url) {
@@ -58,7 +77,7 @@ const RequestForm = () => {
       console.error('Form submission error:', error);
       toast({
         title: "Error",
-        description: "Failed to process payment. Please try again.",
+        description: "Failed to process your request. Please try again.",
         variant: "destructive",
       });
     }

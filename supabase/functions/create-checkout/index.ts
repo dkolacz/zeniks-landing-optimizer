@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { listingUrl, platform, fullName, email } = await req.json();
+    const { listingUrl, platform, fullName, email, requestId } = await req.json();
 
     // Initialize Stripe with the secret key from environment variables
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
@@ -37,9 +37,10 @@ serve(async (req) => {
         },
       ],
       mode: 'payment',
-      success_url: `${req.headers.get('origin')}/payment?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get('origin')}/payment?status=cancelled`,
+      success_url: `${req.headers.get('origin')}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${req.headers.get('origin')}/request-analysis`,
       metadata: {
+        request_id: requestId,
         listing_url: listingUrl,
         platform,
         full_name: fullName,
