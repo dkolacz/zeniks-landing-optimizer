@@ -33,11 +33,10 @@ serve(async (req) => {
 
     console.log('Retrieved Stripe session:', { 
       payment_status: session.payment_status,
-      customer_email: session.customer_email,
-      payment_intent: session.payment_intent,
-      metadata: session.metadata
+      metadata: session.metadata,
+      payment_intent: session.payment_intent
     });
-    
+
     if (session.payment_status === 'paid') {
       // Initialize Supabase client
       const supabaseClient = createClient(
@@ -50,16 +49,24 @@ serve(async (req) => {
         throw new Error('No request_id found in session metadata');
       }
 
+      const paymentIntentId = typeof session.payment_intent === 'string' 
+        ? session.payment_intent 
+        : session.payment_intent?.id;
+
+      console.log('Updating database with:', {
+        request_id: session.metadata.request_id,
+        session_id: session.id,
+        payment_intent_id: paymentIntentId
+      });
+
       // Update the analysis request with all required fields
       const { error: updateError } = await supabaseClient
         .from('listing_analysis_requests')
         .update({
           payment_status: 'completed',
           status: 'paid',
-          stripe_session_id: session_id,
-          stripe_payment_id: typeof session.payment_intent === 'string' 
-            ? session.payment_intent 
-            : session.payment_intent?.id
+          stripe_session_id: session.id,
+          stripe_payment_id: paymentIntentId
         })
         .eq('id', session.metadata.request_id);
 
