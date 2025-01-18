@@ -39,6 +39,8 @@ const RequestForm = () => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      console.log('Starting form submission process...');
+      
       // First, insert the analysis request into the database
       const { data: insertData, error: insertError } = await supabase
         .from('listing_analysis_requests')
@@ -55,29 +57,41 @@ const RequestForm = () => {
 
       if (insertError) {
         console.error('Database insertion error:', insertError);
-        throw new Error(insertError.message);
+        throw new Error(`Database error: ${insertError.message}`);
       }
 
+      if (!insertData?.id) {
+        console.error('No request ID received from database');
+        throw new Error('Failed to create analysis request');
+      }
+
+      console.log('Successfully created analysis request:', insertData.id);
+
       // Create checkout session using Supabase Edge Function
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
+      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout', {
         body: {
           ...values,
-          requestId: insertData.id // Pass the request ID to link the payment
+          requestId: insertData.id
         }
       });
 
-      if (error || !data?.url) {
-        console.error('Checkout error:', error);
-        throw new Error(error?.message || 'Failed to create checkout session');
+      if (checkoutError) {
+        console.error('Checkout creation error:', checkoutError);
+        throw new Error(`Checkout error: ${checkoutError.message}`);
       }
 
-      // Redirect to Stripe checkout
-      window.location.href = data.url;
+      if (!checkoutData?.url) {
+        console.error('No checkout URL received:', checkoutData);
+        throw new Error('Failed to create checkout session');
+      }
+
+      console.log('Successfully created checkout session, redirecting...');
+      window.location.href = checkoutData.url;
     } catch (error) {
       console.error('Form submission error:', error);
       toast({
         title: "Error",
-        description: "Failed to process your request. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to process your request. Please try again.",
         variant: "destructive",
       });
     }

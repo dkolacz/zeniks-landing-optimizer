@@ -13,7 +13,13 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Processing checkout request...');
     const { listingUrl, platform, fullName, email, requestId } = await req.json();
+
+    if (!requestId) {
+      console.error('No request ID provided');
+      throw new Error('Request ID is required');
+    }
 
     // Initialize Stripe with the secret key from environment variables
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
