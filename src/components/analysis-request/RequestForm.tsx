@@ -39,59 +39,26 @@ const RequestForm = () => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      console.log('Starting form submission process...');
+      // Store form data in localStorage for the payment page
+      localStorage.setItem("analysisRequest", JSON.stringify(values));
       
-      // First, insert the analysis request into the database
-      const { data: insertData, error: insertError } = await supabase
-        .from('listing_analysis_requests')
-        .insert([{
-          listing_url: values.listingUrl,
-          platform: values.platform,
-          full_name: values.fullName,
-          email: values.email,
-          status: 'requested',
-          payment_status: 'pending'
-        }])
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error('Database insertion error:', insertError);
-        throw new Error(`Database error: ${insertError.message}`);
-      }
-
-      if (!insertData?.id) {
-        console.error('No request ID received from database');
-        throw new Error('Failed to create analysis request');
-      }
-
-      console.log('Successfully created analysis request:', insertData.id);
-
       // Create checkout session using Supabase Edge Function
-      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout', {
-        body: {
-          ...values,
-          requestId: insertData.id
-        }
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: values
       });
 
-      if (checkoutError) {
-        console.error('Checkout creation error:', checkoutError);
-        throw new Error(`Checkout error: ${checkoutError.message}`);
+      if (error || !data?.url) {
+        console.error('Checkout error:', error);
+        throw new Error(error?.message || 'Failed to create checkout session');
       }
 
-      if (!checkoutData?.url) {
-        console.error('No checkout URL received:', checkoutData);
-        throw new Error('Failed to create checkout session');
-      }
-
-      console.log('Successfully created checkout session, redirecting...');
-      window.location.href = checkoutData.url;
+      // Redirect to Stripe checkout
+      window.location.href = data.url;
     } catch (error) {
       console.error('Form submission error:', error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to process your request. Please try again.",
+        description: "Failed to process payment. Please try again.",
         variant: "destructive",
       });
     }

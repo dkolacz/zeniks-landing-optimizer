@@ -7,6 +7,53 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+async function addToMailerLite(email: string, fullName: string, listingUrl: string, platform: string) {
+  const apiKey = Deno.env.get('MAILERLITE_API_KEY');
+  const groupId = "142779501276824694";
+
+  if (!apiKey) {
+    console.error('MailerLite API key not configured');
+    return;
+  }
+
+  try {
+    console.log('Attempting to add subscriber to MailerLite:', { email, fullName, listingUrl, platform });
+    
+    const response = await fetch('https://connect.mailerlite.com/api/subscribers', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email,
+        fields: {
+          name: fullName,
+          listing_url: listingUrl,
+          platform: platform
+        },
+        groups: [groupId],
+        status: 'active'
+      }),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error('MailerLite API error:', data);
+      throw new Error(`MailerLite API error: ${JSON.stringify(data)}`);
+    }
+    
+    console.log('Successfully added subscriber to MailerLite:', data);
+    return data;
+  } catch (error) {
+    console.error('Error adding to MailerLite:', error);
+    // We don't throw here to avoid breaking the payment flow
+    return null;
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -14,78 +61,58 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Starting payment status update process...');
     const { session_id } = await req.json();
-    
-    if (!session_id) {
-      console.error('No session_id provided in request');
-      throw new Error('Session ID is required');
-    }
-
-    console.log('Processing session:', session_id);
+    console.log('Processing payment status for session:', session_id);
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
       apiVersion: '2023-10-16',
     });
 
-    // Retrieve the session with expanded payment_intent
-    const session = await stripe.checkout.sessions.retrieve(session_id, {
-      expand: ['payment_intent'],
+    // Retrieve the session
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+    console.log('Retrieved Stripe session:', { 
+      payment_status: session.payment_status,
+      customer_email: session.customer_email
     });
-
-    console.log('Retrieved session status:', session.payment_status);
-    console.log('Session metadata:', session.metadata);
-    console.log('Payment intent:', session.payment_intent);
-
+    
     if (session.payment_status === 'paid') {
-      console.log('Payment confirmed as paid, updating database...');
-      
-      // Initialize Supabase client with service role key for full access
+      // Create Supabase client
       const supabaseClient = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       );
 
-      if (!session.metadata?.request_id) {
-        console.error('No request_id found in session metadata');
-        throw new Error('No request_id found in session metadata');
-      }
-
-      // Get payment intent ID
-      const paymentIntentId = typeof session.payment_intent === 'string' 
-        ? session.payment_intent 
-        : session.payment_intent?.id;
-
-      console.log('Updating database for request:', session.metadata.request_id);
-      console.log('Update data:', {
-        payment_status: 'completed',
-        status: 'paid',
-        stripe_session_id: session.id,
-        stripe_payment_id: paymentIntentId,
-      });
-
-      // Update the analysis request
-      const { data: updateData, error: updateError } = await supabaseClient
+      // Store the form data in Supabase
+      const { error: insertError } = await supabaseClient
         .from('listing_analysis_requests')
-        .update({
+        .insert({
+          listing_url: session.metadata?.listing_url,
+          platform: session.metadata?.platform,
+          full_name: session.metadata?.full_name,
+          email: session.metadata?.email,
           payment_status: 'completed',
-          status: 'paid',
-          stripe_session_id: session.id,
-          stripe_payment_id: paymentIntentId,
-        })
-        .eq('id', session.metadata.request_id)
-        .select();
+          stripe_session_id: session_id,
+          stripe_payment_id: session.payment_intent as string,
+        });
 
-      if (updateError) {
-        console.error('Database update error:', updateError);
-        throw new Error(`Failed to update payment status: ${updateError.message}`);
+      if (insertError) {
+        console.error('Error inserting data:', insertError);
+        throw new Error('Failed to store analysis request');
       }
 
-      console.log('Database update successful:', updateData);
+      console.log('Successfully stored analysis request in database');
+
+      // Add user to MailerLite after successful payment and database update
+      await addToMailerLite(
+        session.metadata?.email || '',
+        session.metadata?.full_name || '',
+        session.metadata?.listing_url || '',
+        session.metadata?.platform || ''
+      );
 
       return new Response(
-        JSON.stringify({ status: 'paid', data: updateData }),
+        JSON.stringify({ status: 'paid' }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
@@ -93,7 +120,6 @@ serve(async (req) => {
       );
     }
 
-    console.log('Payment not yet paid, status:', session.payment_status);
     return new Response(
       JSON.stringify({ status: session.payment_status }),
       { 
