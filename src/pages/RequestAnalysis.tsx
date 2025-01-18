@@ -17,23 +17,11 @@ const RequestAnalysis = () => {
       <div className="pt-24 pb-12">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
-            <div className="flex justify-center mb-6">
-              <div className="w-32">
-                <AspectRatio ratio={3/1}>
-                  <img
-                    src="/lovable-uploads/bed86774-1164-422a-bd44-7697b6139ab8.png"
-                    alt="Zeniks Logo"
-                    className="object-contain w-full h-full"
-                  />
-                </AspectRatio>
-              </div>
-            </div>
-
             <h1 className="text-3xl md:text-4xl font-bold text-zeniks-purple text-center mb-4">
-              Request Your Listing Report
+              Get Your Personalized Listing Report
             </h1>
             <p className="text-zeniks-gray-dark text-center mb-8 max-w-2xl mx-auto">
-              We'll analyze your listing and send your detailed report to the email address you provide.
+              Submit the form, and we'll send you a detailed report of your listing.
             </p>
 
             <RequestForm />
