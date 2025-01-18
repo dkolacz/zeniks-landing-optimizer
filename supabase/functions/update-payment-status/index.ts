@@ -15,7 +15,11 @@ serve(async (req) => {
 
   try {
     const { session_id } = await req.json();
-    console.log('Processing payment status for session:', session_id);
+    console.log('Processing payment status update for session:', session_id);
+
+    if (!session_id) {
+      throw new Error('Session ID is required');
+    }
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
@@ -35,7 +39,7 @@ serve(async (req) => {
     });
     
     if (session.payment_status === 'paid') {
-      // Create Supabase client
+      // Initialize Supabase client
       const supabaseClient = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -61,7 +65,7 @@ serve(async (req) => {
 
       if (updateError) {
         console.error('Error updating payment status:', updateError);
-        throw new Error('Failed to update payment status');
+        throw new Error(`Failed to update payment status: ${updateError.message}`);
       }
 
       console.log('Successfully updated payment status in database for request:', session.metadata.request_id);
