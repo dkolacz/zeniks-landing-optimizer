@@ -15,14 +15,16 @@ const Success = () => {
     const fetchDetails = async () => {
       if (!sessionId) return;
 
+      // Update the status to 'paid' for the request
       const { data, error } = await supabase
         .from("listing_analysis_requests")
-        .select("listing_url, email, platform")
+        .update({ status: 'paid', payment_status: 'completed' })
         .eq("stripe_session_id", sessionId)
+        .select("listing_url, email, platform")
         .single();
 
       if (error) {
-        console.error("Error fetching listing details:", error);
+        console.error("Error updating listing details:", error);
         return;
       }
 
