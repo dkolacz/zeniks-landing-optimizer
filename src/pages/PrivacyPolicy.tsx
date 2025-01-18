@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { Shield } from "lucide-react";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 const PrivacyPolicy = () => {
   useEffect(() => {
@@ -10,7 +12,8 @@ const PrivacyPolicy = () => {
 
   return (
     <div className="min-h-screen bg-zeniks-gray-light">
-      <div className="max-w-4xl mx-auto px-4 py-12">
+      <Navbar />
+      <div className="max-w-4xl mx-auto px-4 py-24">
         <div className="flex items-center gap-2 mb-8">
           <Shield className="w-8 h-8 text-zeniks-purple" />
           <h1 className="text-3xl font-bold text-zeniks-purple">Privacy Policy</h1>
@@ -136,6 +139,7 @@ const PrivacyPolicy = () => {
           <p className="text-sm">Effective Date: 2025-01-01</p>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };
