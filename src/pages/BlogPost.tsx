@@ -14,7 +14,7 @@ const BlogPost = () => {
             <div className="flex items-center text-zeniks-gray-dark mb-8">
               <span>March 21, 2024</span>
               <span className="mx-2">•</span>
-              <span>15 min read</span>
+              <span>10 min read</span>
             </div>
             <img
               src="/lovable-uploads/1ccc17b7-8c1c-4daf-a373-6cfae9bd19f9.png"
@@ -22,7 +22,6 @@ const BlogPost = () => {
               className="w-full h-[400px] object-cover rounded-lg mb-8"
             />
           </header>
-
           <div className="prose prose-lg max-w-none">
             <h2 className="text-2xl font-bold text-zeniks-purple mb-6">Introduction</h2>
             <p className="text-lg text-zeniks-gray-dark mb-8">

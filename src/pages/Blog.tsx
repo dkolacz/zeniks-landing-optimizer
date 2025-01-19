@@ -11,7 +11,7 @@ const Blog = () => {
       image: "/lovable-uploads/1ccc17b7-8c1c-4daf-a373-6cfae9bd19f9.png",
       slug: "optimize-rental-listing",
       date: "March 21, 2024",
-      readTime: "15 min read"
+      readTime: "10 min read"
     }
   ];
 

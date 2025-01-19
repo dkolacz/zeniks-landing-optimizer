@@ -13,6 +13,18 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://zeniks.co/blog</loc>
+    <lastmod>2024-03-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://zeniks.co/blog/optimize-rental-listing</loc>
+    <lastmod>2024-03-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://zeniks.co/about</loc>
     <lastmod>2024-03-20</lastmod>
     <changefreq>monthly</changefreq>
