@@ -1,12 +1,23 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const Footer = () => {
+  const navigate = useNavigate();
+  
   return (
     <footer id="contact" className="bg-zeniks-gray-blue py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <div>
-            <h3 className="text-2xl font-bold text-zeniks-purple mb-4">Zeniks</h3>
+            <div 
+              className="cursor-pointer mb-4"
+              onClick={() => navigate("/")}
+            >
+              <img 
+                src="/lovable-uploads/e4d24c33-5eb5-4f55-bc09-2f23afc828e5.png" 
+                alt="Zeniks Logo" 
+                className="h-8 w-auto"
+              />
+            </div>
             <p className="text-zeniks-gray-dark">
               Empowering hosts to maximize their rental potential through AI-driven
               insights.
