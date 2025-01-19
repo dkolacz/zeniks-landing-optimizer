@@ -37,13 +37,13 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <div 
-            className="flex-shrink-0 cursor-pointer"
+            className="flex-shrink-0 cursor-pointer flex items-center justify-center"
             onClick={() => navigate("/")}
           >
             <img 
               src="/lovable-uploads/e4d24c33-5eb5-4f55-bc09-2f23afc828e5.png" 
               alt="Zeniks Logo" 
-              className="h-8 w-auto"
+              className="h-8 w-auto object-contain"
             />
           </div>
 
