@@ -66,6 +66,12 @@ const Navbar = () => {
               Benefits
             </button>
             <button
+              onClick={() => navigate("/blog")}
+              className="text-zeniks-gray-dark hover:text-zeniks-purple transition-colors"
+            >
+              Blog
+            </button>
+            <button
               onClick={() => scrollToSection("contact")}
               className="text-zeniks-gray-dark hover:text-zeniks-purple transition-colors"
             >
@@ -105,6 +111,12 @@ const Navbar = () => {
                 className="block w-full text-left px-3 py-2 text-zeniks-gray-dark hover:text-zeniks-purple"
               >
                 Benefits
+              </button>
+              <button
+                onClick={() => navigate("/blog")}
+                className="block w-full text-left px-3 py-2 text-zeniks-gray-dark hover:text-zeniks-purple"
+              >
+                Blog
               </button>
               <button
                 onClick={() => scrollToSection("contact")}

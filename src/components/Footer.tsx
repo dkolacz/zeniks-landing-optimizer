@@ -39,6 +39,14 @@ const Footer = () => {
                   Pricing
                 </a>
               </li>
+              <li>
+                <Link
+                  to="/blog"
+                  className="text-zeniks-gray-dark hover:text-zeniks-purple transition-colors"
+                >
+                  Blog
+                </Link>
+              </li>
             </ul>
           </div>
           <div>

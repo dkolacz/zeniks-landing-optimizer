@@ -6,6 +6,8 @@ import Terms from "@/pages/Terms";
 import About from "@/pages/About";
 import Success from "@/pages/Success";
 import Payment from "@/pages/Payment";
+import Blog from "@/pages/Blog";
+import BlogPost from "@/pages/BlogPost";
 import { Toaster } from "@/components/ui/toaster";
 
 function App() {
@@ -19,6 +21,8 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/success" element={<Success />} />
         <Route path="/payment" element={<Payment />} />
+        <Route path="/blog" element={<Blog />} />
+        <Route path="/blog/optimize-rental-listing" element={<BlogPost />} />
       </Routes>
       <Toaster />
     </Router>
