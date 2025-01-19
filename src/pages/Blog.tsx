@@ -12,6 +12,15 @@ const Blog = () => {
       slug: "optimize-rental-listing",
       date: "March 21, 2024",
       readTime: "10 min read"
+    },
+    {
+      id: 2,
+      title: "How to Leverage Guest Reviews to Skyrocket Your Airbnb Ranking",
+      description: "Learn how to use guest reviews to boost your Airbnb ranking and attract more bookings. Discover strategies for getting more reviews, responding effectively, and using feedback to improve your listing.",
+      image: "/lovable-uploads/2bfa4fa2-ce3b-404a-bc42-c3ee65f05058.png",
+      slug: "leverage-guest-reviews",
+      date: "January 3, 2025",
+      readTime: "8 min read"
     }
   ];
 
