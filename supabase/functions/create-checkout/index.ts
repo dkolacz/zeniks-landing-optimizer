@@ -57,7 +57,7 @@ serve(async (req) => {
       customer_email: email,
       line_items: [
         {
-          price: 'price_1QtS5GEQ1gZWqi10scFmRpa5', // Updated price ID
+          price: 'price_1Qih2YEQ1gZWqi10f290YZ38', // Updated price ID
           quantity: 1,
         },
       ],
