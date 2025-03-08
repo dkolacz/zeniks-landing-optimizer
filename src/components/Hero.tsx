@@ -1,9 +1,5 @@
-import { ArrowRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 const Hero = () => {
-  const navigate = useNavigate();
-
   return (
     <div className="relative min-h-screen flex items-center bg-gradient-to-br from-zeniks-gray-light via-white to-zeniks-blue/20">
       <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
@@ -19,15 +15,12 @@ const Hero = () => {
             website listing
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button
-              onClick={() => navigate("/request-analysis")}
-              className="bg-zeniks-purple text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-opacity-90 transition-all flex items-center gap-2 group"
-            >
-              Analyze My Listing
-              <ArrowRight className="group-hover:translate-x-1 transition-transform" />
-            </button>
+            <a href="#contact" 
+              className="bg-zeniks-purple text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-opacity-90 transition-all flex items-center gap-2 group">
+              Contact Us
+            </a>
             <span className="text-zeniks-gray-dark text-lg font-medium">
-              Just $49 per analysis
+              Custom pricing for property managers
             </span>
           </div>
         </div>
