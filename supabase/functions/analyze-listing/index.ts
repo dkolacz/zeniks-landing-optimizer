@@ -107,14 +107,31 @@ serve(async (req) => {
           console.log("Apify API response status:", response.status);
           console.log("Apify API response statusText:", response.statusText);
           
+          // Log response headers
+          const headers = {};
+          response.headers.forEach((value, key) => {
+            headers[key] = value;
+          });
+          console.log("Apify API response headers:", JSON.stringify(headers));
+          
           if (!response.ok) {
             console.error(`API request failed with status ${response.status}: ${response.statusText}`);
+            
+            // Try to parse error response if any
+            let errorDetails = "";
+            try {
+              const errorBody = await response.text();
+              console.error("Error response body:", errorBody);
+              errorDetails = ` | Response body: ${errorBody}`;
+            } catch (parseError) {
+              console.error("Failed to parse error response:", parseError);
+            }
             
             await supabase
               .from('airbnb_analyses')
               .update({ 
                 status: 'failed',
-                error_message: `API request failed with status ${response.status}: ${response.statusText}` 
+                error_message: `API request failed with status ${response.status}: ${response.statusText}${errorDetails}` 
               })
               .eq('id', analysisRecord.id);
               
@@ -124,6 +141,16 @@ serve(async (req) => {
           // First get the response as text to ensure we have valid data
           const responseText = await response.text();
           console.log("Apify API raw response length:", responseText.length);
+          console.log("Apify API raw response first 1000 chars:", responseText.substring(0, 1000));
+          console.log("Apify API raw response last 1000 chars:", responseText.substring(Math.max(0, responseText.length - 1000)));
+          
+          // Store the raw response before attempting to parse it
+          await supabase
+            .from('airbnb_analyses')
+            .update({ 
+              raw_response: responseText
+            })
+            .eq('id', analysisRecord.id);
           
           if (!responseText || responseText.trim() === '') {
             console.error("Received empty response from Apify API");

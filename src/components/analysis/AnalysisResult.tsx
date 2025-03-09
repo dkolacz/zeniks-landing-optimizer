@@ -1,17 +1,20 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface AnalysisResultProps {
   listingData: any;
   listingUrl: string;
+  rawResponse?: string;
 }
 
-const AnalysisResult = ({ listingData, listingUrl }: AnalysisResultProps) => {
+const AnalysisResult = ({ listingData, listingUrl, rawResponse }: AnalysisResultProps) => {
   console.log("AnalysisResult - Rendering with raw listingData type:", typeof listingData);
+  console.log("AnalysisResult - Has raw response:", !!rawResponse);
   
   // Check if the data is empty
-  if (!listingData) {
-    console.error("AnalysisResult - listingData is empty or null");
+  if (!listingData && !rawResponse) {
+    console.error("AnalysisResult - listingData is empty or null and no rawResponse");
     return (
       <div className="py-10 px-4">
         <Card className="max-w-5xl mx-auto">
@@ -55,6 +58,15 @@ const AnalysisResult = ({ listingData, listingUrl }: AnalysisResultProps) => {
                   <h3 className="text-xl font-semibold text-red-600">Empty Response</h3>
                   <p>We received an empty string from the API.</p>
                   <p>The API may have encountered an issue while scraping this particular listing. Please try again or try with a different Airbnb listing URL.</p>
+                  
+                  {rawResponse && (
+                    <div>
+                      <h4 className="font-medium text-lg mb-2">Raw API Response</h4>
+                      <div className="bg-gray-50 p-4 rounded-lg overflow-auto max-h-96">
+                        <pre className="text-xs whitespace-pre-wrap">{rawResponse}</pre>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -86,14 +98,37 @@ const AnalysisResult = ({ listingData, listingUrl }: AnalysisResultProps) => {
                 <h3 className="text-xl font-semibold text-red-600">Error Processing Data</h3>
                 <p>We received a response from the API but couldn't process it correctly.</p>
                 <p>Error details: {error instanceof Error ? error.message : 'Unknown parsing error'}</p>
-                <div className="bg-gray-50 p-4 rounded-lg overflow-auto max-h-96 mt-4">
-                  <h4 className="font-medium text-lg mb-2">Raw Response Preview</h4>
-                  <pre className="text-xs whitespace-pre-wrap">
-                    {typeof listingData === 'string' 
-                      ? `${listingData.substring(0, 500)}${listingData.length > 500 ? '...' : ''}`
-                      : 'Non-string data received'}
-                  </pre>
-                </div>
+                
+                <Tabs defaultValue="formatted">
+                  <TabsList className="mb-4">
+                    <TabsTrigger value="formatted">Formatted Data</TabsTrigger>
+                    <TabsTrigger value="raw">Raw API Response</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="formatted">
+                    <div className="bg-gray-50 p-4 rounded-lg overflow-auto max-h-96 mt-4">
+                      <h4 className="font-medium text-lg mb-2">Response Preview</h4>
+                      <pre className="text-xs whitespace-pre-wrap">
+                        {typeof listingData === 'string' 
+                          ? `${listingData.substring(0, 1000)}${listingData.length > 1000 ? '...' : ''}`
+                          : 'Non-string data received'}
+                      </pre>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="raw">
+                    {rawResponse ? (
+                      <div className="bg-gray-50 p-4 rounded-lg overflow-auto max-h-96 mt-4">
+                        <h4 className="font-medium text-lg mb-2">Raw API Response</h4>
+                        <pre className="text-xs whitespace-pre-wrap">{rawResponse}</pre>
+                      </div>
+                    ) : (
+                      <div className="bg-gray-50 p-4 rounded-lg overflow-auto max-h-96 mt-4">
+                        <p>No raw response data available</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </div>
             </CardContent>
           </Card>
@@ -164,12 +199,36 @@ const AnalysisResult = ({ listingData, listingUrl }: AnalysisResultProps) => {
               </div>
             </div>
             
-            <div>
-              <h4 className="font-medium text-lg mb-2">Raw Response Data</h4>
-              <div className="bg-gray-50 p-4 rounded-lg overflow-auto max-h-96">
-                <pre className="text-xs">{JSON.stringify(processedData, null, 2)}</pre>
-              </div>
-            </div>
+            <Tabs defaultValue="formatted">
+              <TabsList className="mb-4">
+                <TabsTrigger value="formatted">Formatted Data</TabsTrigger>
+                <TabsTrigger value="raw">Raw Response</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="formatted">
+                <div>
+                  <h4 className="font-medium text-lg mb-2">Processed Response Data</h4>
+                  <div className="bg-gray-50 p-4 rounded-lg overflow-auto max-h-96">
+                    <pre className="text-xs">{JSON.stringify(processedData, null, 2)}</pre>
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="raw">
+                {rawResponse ? (
+                  <div>
+                    <h4 className="font-medium text-lg mb-2">Raw API Response</h4>
+                    <div className="bg-gray-50 p-4 rounded-lg overflow-auto max-h-96">
+                      <pre className="text-xs whitespace-pre-wrap">{rawResponse}</pre>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 p-4 rounded-lg text-center py-8">
+                    <p>No raw response data available</p>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </div>
         </CardContent>
       </Card>

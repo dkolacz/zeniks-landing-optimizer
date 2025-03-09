@@ -17,7 +17,8 @@ const Analysis = () => {
     loading, 
     progress, 
     analysisStatus: analysis?.status,
-    hasResponseData: !!analysis?.response_data
+    hasResponseData: !!analysis?.response_data,
+    hasRawResponse: !!analysis?.raw_response
   });
 
   const renderContent = () => {
@@ -32,11 +33,12 @@ const Analysis = () => {
     }
 
     // Success case
-    if (analysis?.status === 'success' && analysis?.response_data) {
-      console.log("Rendering success state with response_data");
+    if (analysis?.status === 'success' && (analysis?.response_data || analysis?.raw_response)) {
+      console.log("Rendering success state with response_data or raw_response");
       return <AnalysisResult 
         listingData={analysis.response_data} 
         listingUrl={analysis.listing_url} 
+        rawResponse={analysis.raw_response}
       />;
     }
 

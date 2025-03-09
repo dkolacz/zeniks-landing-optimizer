@@ -54,6 +54,15 @@ export const useAnalysis = (id: string | undefined) => {
         console.log("Fetched analysis data from DB:", data);
         console.log("Analysis status:", data.status);
         
+        // Check if we have raw_response
+        if (data.raw_response) {
+          console.log("Raw response available, length:", data.raw_response.length);
+          console.log("Raw response first 100 chars:", data.raw_response.substring(0, 100));
+          console.log("Raw response last 100 chars:", data.raw_response.substring(data.raw_response.length - 100));
+        } else {
+          console.log("No raw_response found");
+        }
+        
         // More detailed logging of response_data
         if (data.response_data) {
           console.log("Response data type:", typeof data.response_data);
