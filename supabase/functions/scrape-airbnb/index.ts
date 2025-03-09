@@ -42,7 +42,11 @@ Deno.serve(async (req) => {
     // Create an initial record to store the Apify results
     const { data: recordData, error: recordError } = await supabase
       .from('listing_raw')
-      .insert([{ json: { status: 'pending', url: listingUrl } }])
+      .insert([{ 
+        listing_url: listingUrl,
+        status: 'pending',
+        json: { url: listingUrl }
+      }])
       .select('id')
       .maybeSingle();
     
@@ -108,7 +112,10 @@ async function processListingInBackground(listingUrl, recordId, supabase) {
     // Update record to show we're processing
     await supabase
       .from('listing_raw')
-      .update({ json: { status: 'processing', url: listingUrl } })
+      .update({ 
+        status: 'processing',
+        json: { url: listingUrl }
+      })
       .eq('id', recordId);
     
     // Call Apify to analyze the listing
@@ -118,32 +125,17 @@ async function processListingInBackground(listingUrl, recordId, supabase) {
     // Ensure we have a valid response
     if (!apifyResult) {
       console.error(`Empty Apify result for record ${recordId}`);
-      await updateRecordWithError(supabase, recordId, "Empty response from analysis service");
+      await updateRecordWithError(supabase, recordId, listingUrl, "Empty response from analysis service");
       return;
     }
-    
-    // Prepare the final result with proper structure
-    const finalResult = {
-      status: 'success',
-      url: listingUrl,
-      data: apifyResult,
-      updatedAt: new Date().toISOString()
-    };
-    
-    // Log the structure before saving to help with debugging
-    console.log(`Saving result structure:`, {
-      status: finalResult.status,
-      url: finalResult.url,
-      dataType: typeof finalResult.data,
-      dataIsNull: finalResult.data === null,
-      dataKeys: finalResult.data ? Object.keys(finalResult.data) : [],
-      updatedAt: finalResult.updatedAt
-    });
     
     // Update the record with the successful result
     const { error: updateError } = await supabase
       .from('listing_raw')
-      .update({ json: finalResult })
+      .update({ 
+        status: 'success',
+        json: apifyResult
+      })
       .eq('id', recordId);
     
     if (updateError) {
@@ -153,20 +145,21 @@ async function processListingInBackground(listingUrl, recordId, supabase) {
     }
   } catch (error) {
     console.error(`Error in background processing for record ${recordId}:`, error);
-    await updateRecordWithError(supabase, recordId, error.message);
+    await updateRecordWithError(supabase, recordId, listingUrl, error.message);
   }
 }
 
-async function updateRecordWithError(supabase, recordId, errorMessage) {
+async function updateRecordWithError(supabase, recordId, listingUrl, errorMessage) {
   try {
     const { error } = await supabase
       .from('listing_raw')
       .update({ 
+        status: 'error',
+        error_message: errorMessage || "Unknown error",
         json: { 
-          status: 'failed', 
-          error: errorMessage || "Unknown error", 
-          updatedAt: new Date().toISOString() 
-        } 
+          url: listingUrl,
+          error: errorMessage || "Unknown error" 
+        }
       })
       .eq('id', recordId);
     
@@ -274,26 +267,23 @@ async function callApifyActor(listingUrl) {
           
           if (responseText.trim() === '') {
             console.log("Empty response from Apify dataset");
-            result = { 
+            return { 
               warning: "No data extracted from the page",
               extracted: false
             };
-            break;
           }
           
           const items = JSON.parse(responseText);
           
           if (Array.isArray(items) && items.length > 0) {
             console.log(`Found ${items.length} items in dataset`);
-            result = items[0]; // Get the first item (as we limited to 1 page)
-            break;
+            return items[0]; // Get the first item (as we limited to 1 page)
           } else {
             console.log("No items in dataset");
-            result = { 
+            return { 
               warning: "Page crawled but no content extracted",
               extracted: false
             };
-            break;
           }
         } catch (parseError) {
           console.error(`Failed to parse Apify response: ${parseError.message}`);
@@ -307,7 +297,7 @@ async function callApifyActor(listingUrl) {
       attempts++;
     }
     
-    if (!result && attempts >= maxAttempts) {
+    if (attempts >= maxAttempts) {
       throw new Error("Timed out waiting for analysis results");
     }
     
