@@ -193,20 +193,34 @@ async function callApifyActor(listingUrl) {
     console.log(`APIFY_API_KEY is ${apifyApiKey ? 'set' : 'not set'}`);
     
     // Configure Apify actor
-    const actorId = 'apify/website-content-crawler'; // Replace with your actual actor ID
+    const actorId = 'dtrungtin/airbnb-scraper'; // Changed to the correct Airbnb scraper actor
     console.log(`Using Apify actor ID: ${actorId}`);
     
-    // Prepare the input for the Apify actor
+    // Prepare the input for the Apify actor with the correct format
     const input = {
-      startUrls: [{ url: listingUrl }],
-      maxCrawlPages: 1,
-      forceResponseEncoding: false,
-      proxyConfiguration: { useApifyProxy: true }
+      addMoreHostInfo: false,
+      calendarMonths: 0,
+      currency: "USD",
+      extraData: true,
+      limitPoints: 100,
+      maxConcurrency: 50,
+      maxItems: 1,
+      maxReviews: 100,
+      proxyConfiguration: {
+        useApifyProxy: true
+      },
+      startUrls: [
+        {
+          URL: listingUrl,
+          method: "GET"
+        }
+      ],
+      timeoutMs: 600000
     };
     
     console.log("Starting Apify run with input:", JSON.stringify(input));
     
-    // Start the actor run
+    // Start the actor run with the correct API endpoint
     const startResponse = await fetch(`https://api.apify.com/v2/acts/${actorId}/runs?token=${apifyApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
