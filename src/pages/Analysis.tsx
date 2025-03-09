@@ -1,8 +1,9 @@
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader } from "lucide-react";
+import { Loader, AlertCircle, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const Analysis = () => {
   const [searchParams] = useSearchParams();
@@ -11,6 +12,7 @@ const Analysis = () => {
   const [error, setError] = useState<string | null>(null);
   const [listingData, setListingData] = useState<any>(null);
   const [status, setStatus] = useState<string>("pending");
+  const navigate = useNavigate();
   
   useEffect(() => {
     if (!id) {
@@ -30,15 +32,17 @@ const Analysis = () => {
           return;
         }
         
-        const { data, error } = await supabase
+        console.log("Fetching record with ID:", numericId);
+        
+        const { data, error: fetchError } = await supabase
           .from("listing_raw")
           .select("*")
           .eq("id", numericId)
-          .maybeSingle(); // Changed from single() to maybeSingle()
+          .maybeSingle();
 
-        if (error) {
-          console.error("Database error:", error);
-          setError(error.message);
+        if (fetchError) {
+          console.error("Database error:", fetchError);
+          setError(`Database error: ${fetchError.message}`);
           setLoading(false);
           return;
         }
@@ -75,6 +79,10 @@ const Analysis = () => {
     fetchListing();
   }, [id, loading]);
 
+  const goToHome = () => {
+    navigate('/');
+  };
+
   return (
     <div className="container max-w-4xl mx-auto px-4 py-12">
       <h1 className="text-3xl font-bold mb-8 text-center">Airbnb Listing Analysis</h1>
@@ -91,9 +99,24 @@ const Analysis = () => {
           </p>
         </div>
       ) : error ? (
-        <div className="p-6 rounded-lg border border-red-200 bg-red-50">
-          <h2 className="text-xl font-semibold text-red-700 mb-2">Analysis Error</h2>
-          <p className="text-red-600">{error}</p>
+        <div className="flex flex-col items-center gap-6">
+          <div className="p-6 rounded-lg border border-red-200 bg-red-50 w-full">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <h2 className="text-xl font-semibold text-red-700 mb-2">Analysis Error</h2>
+                <p className="text-red-600">{error}</p>
+              </div>
+            </div>
+          </div>
+          <Button 
+            onClick={goToHome} 
+            className="flex items-center gap-2"
+            variant="outline"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Return to Home
+          </Button>
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow-lg p-6">
