@@ -4,6 +4,7 @@ import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Json } from "@/integrations/supabase/types";
 
 const Hero = () => {
   const [airbnbUrl, setAirbnbUrl] = useState("");
@@ -32,12 +33,16 @@ const Hero = () => {
         return false;
       }
 
-      const status = data.json.status;
-      console.log(`Record ${id} status:`, status, data.json);
+      console.log(`Record ${id} data:`, data.json);
+      
+      // Safely check the status property
+      const jsonData = data.json as Record<string, any>;
+      const status = jsonData.status;
+      console.log(`Record ${id} status:`, status);
       
       if (status === 'failed' || status === 'error') {
-        const errorMsg = data.json.error || 'Unknown error';
-        const statusCode = data.json.statusCode || '';
+        const errorMsg = jsonData.error || 'Unknown error';
+        const statusCode = jsonData.statusCode || '';
         setRecordError(`Analysis failed: ${errorMsg} ${statusCode ? `(Status: ${statusCode})` : ''}`);
         return false;
       }
@@ -46,6 +51,42 @@ const Hero = () => {
     } catch (err) {
       console.error(`Unexpected error checking record ${id}:`, err);
       setRecordError(`Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      return false;
+    }
+  };
+
+  // Function to check record details using our edge function
+  const checkRecordDetails = async (id: number) => {
+    try {
+      console.log(`Checking details for record ID: ${id}`);
+      const { data, error } = await supabase.functions.invoke("check-record", {
+        body: { recordId: id },
+      });
+      
+      if (error) {
+        console.error("Error checking record details:", error);
+        return;
+      }
+      
+      console.log("Record details:", data);
+      
+      if (data.success && data.data) {
+        const jsonData = data.data.json || {};
+        console.log("Record JSON structure:", data.recordStructure);
+        
+        // If we received a success status from Apify but it's not correctly stored
+        if (jsonData && data.recordStructure?.hasStatus) {
+          console.log("Record status:", jsonData.status);
+          if (jsonData.status === 'success') {
+            toast.success("Listing analyzed successfully!");
+            return true;
+          }
+        }
+      }
+      
+      return false;
+    } catch (err) {
+      console.error("Error invoking check-record function:", err);
       return false;
     }
   };
@@ -88,6 +129,11 @@ const Hero = () => {
         // Check the record status directly to handle edge cases
         const isSuccess = await checkRecordStatus(data.recordId);
         
+        // If standard check didn't work, try our detailed check
+        if (!isSuccess) {
+          await checkRecordDetails(data.recordId);
+        }
+        
         toast.dismiss(toastId);
         
         if (isSuccess) {
@@ -96,6 +142,8 @@ const Hero = () => {
           document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
         } else if (recordError) {
           toast.error(recordError);
+        } else {
+          toast.info("Analysis completed, but the status is pending. Please check back in a moment.");
         }
       } else {
         toast.dismiss(toastId);
@@ -113,7 +161,14 @@ const Hero = () => {
   // Check existing recordId status on component mount
   useEffect(() => {
     if (recordId) {
-      checkRecordStatus(recordId);
+      const checkStatus = async () => {
+        const isSuccess = await checkRecordStatus(recordId);
+        if (!isSuccess) {
+          await checkRecordDetails(recordId);
+        }
+      };
+      
+      checkStatus();
     }
   }, [recordId]);
 

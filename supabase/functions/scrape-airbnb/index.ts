@@ -143,9 +143,45 @@ Deno.serve(async (req) => {
         )
       }
 
-      const apifyData = await apifyResponse.json()
-      console.log(`Successfully scraped listing. Data type: ${typeof apifyData}, Data size: ${JSON.stringify(apifyData).length} bytes`);
+      // Get the response as text first to inspect it
+      const responseText = await apifyResponse.text();
+      console.log(`Apify response text length: ${responseText.length} characters`);
       
+      // Try to parse the response as JSON
+      let apifyData;
+      try {
+        apifyData = JSON.parse(responseText);
+        console.log(`Successfully parsed Apify response as JSON`);
+      } catch (parseError) {
+        console.error(`Error parsing Apify response as JSON: ${parseError.message}`);
+        
+        // Update the record with parse error
+        await supabase
+          .from('listing_raw')
+          .update({ 
+            json: { 
+              status: 'error',
+              error: `Failed to parse Apify response: ${parseError.message}`,
+              responseText: responseText.substring(0, 1000), // Store a portion of the response for debugging
+              url: listingUrl,
+              updated: new Date().toISOString()
+            }
+          })
+          .eq('id', recordId)
+        
+        return new Response(
+          JSON.stringify({ 
+            error: 'Failed to parse Apify response', 
+            recordId 
+          }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
+      }
+      
+      // Check if we have valid data
       if (!apifyData || (Array.isArray(apifyData) && apifyData.length === 0)) {
         console.error("Apify returned empty data");
         
@@ -175,18 +211,37 @@ Deno.serve(async (req) => {
         )
       }
 
+      // Log the data structure for debugging
+      console.log(`Apify data structure: ${typeof apifyData}, is array: ${Array.isArray(apifyData)}`);
+      if (Array.isArray(apifyData)) {
+        console.log(`Apify data array length: ${apifyData.length}`);
+      }
+      
+      // Format the data to store
+      const dataToStore = Array.isArray(apifyData) && apifyData.length > 0 ? apifyData[0] : apifyData;
+      console.log(`Data to store type: ${typeof dataToStore}`);
+      
+      // Ensure we have an object to store
+      const finalData = typeof dataToStore === 'object' ? 
+        {
+          ...dataToStore,
+          status: 'success',
+          statusCode: responseStatus,
+          url: listingUrl,
+          updated: new Date().toISOString()
+        } : 
+        {
+          status: 'success',
+          statusCode: responseStatus,
+          data: dataToStore,
+          url: listingUrl,
+          updated: new Date().toISOString()
+        };
+
       // Update the record with the scraped data and success status
       const { error: updateError } = await supabase
         .from('listing_raw')
-        .update({ 
-          json: {
-            ...apifyData,
-            status: 'success',
-            statusCode: responseStatus,
-            url: listingUrl,
-            updated: new Date().toISOString()
-          } 
-        })
+        .update({ json: finalData })
         .eq('id', recordId)
 
       if (updateError) {
@@ -199,13 +254,28 @@ Deno.serve(async (req) => {
           }
         )
       }
+      
+      // Verify the data was stored correctly
+      const { data: verifyData, error: verifyError } = await supabase
+        .from('listing_raw')
+        .select('json')
+        .eq('id', recordId)
+        .single();
+        
+      if (verifyError || !verifyData) {
+        console.error(`Error verifying stored data: ${verifyError?.message || 'No data returned'}`);
+      } else {
+        console.log(`Data stored successfully, status: ${verifyData.json?.status || 'unknown'}`);
+      }
 
       return new Response(
         JSON.stringify({ 
           success: true, 
           message: 'Listing data scraped and stored successfully', 
           recordId,
-          status: responseStatus 
+          status: responseStatus,
+          dataType: typeof dataToStore,
+          isArray: Array.isArray(apifyData)
         }),
         { 
           status: 200, 

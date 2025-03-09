@@ -71,7 +71,22 @@ Deno.serve(async (req) => {
     // Log the full record content for debugging
     console.log(`Record ${recordId} details:`, data);
 
-    // Return the record data
+    // Check if the JSON data is stored correctly
+    const jsonData = data.json;
+    let jsonAnalysis = {
+      isNull: jsonData === null,
+      type: typeof jsonData,
+      isArray: Array.isArray(jsonData),
+      isEmpty: jsonData && typeof jsonData === 'object' ? Object.keys(jsonData).length === 0 : true,
+      hasStatus: jsonData && typeof jsonData === 'object' && 'status' in jsonData,
+      status: jsonData && typeof jsonData === 'object' && 'status' in jsonData ? jsonData.status : null,
+      keys: jsonData && typeof jsonData === 'object' ? Object.keys(jsonData) : [],
+      size: JSON.stringify(jsonData).length
+    };
+
+    console.log(`JSON Data Analysis:`, jsonAnalysis);
+
+    // Return the record data with detailed analysis
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -79,12 +94,7 @@ Deno.serve(async (req) => {
         recordStructure: {
           id: typeof data.id,
           created_at: typeof data.created_at,
-          json: data.json ? {
-            type: typeof data.json,
-            hasStatus: data.json.status !== undefined,
-            status: data.json.status,
-            keys: Object.keys(data.json)
-          } : null
+          json: jsonAnalysis
         }
       }),
       { 
