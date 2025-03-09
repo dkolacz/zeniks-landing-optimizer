@@ -48,6 +48,33 @@ export type Database = {
         }
         Relationships: []
       }
+      listing_raw: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: number
+          json: Json | null
+          listing_url: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: number
+          json?: Json | null
+          listing_url?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: number
+          json?: Json | null
+          listing_url?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
