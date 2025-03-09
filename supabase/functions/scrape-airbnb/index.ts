@@ -1,141 +1,63 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.0'
 
+// Define CORS headers for all responses
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-Deno.serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+// Create and return a response with proper headers
+function createResponse(body: any, status: number = 200) {
+  return new Response(
+    JSON.stringify(body),
+    { 
+      status, 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    }
+  );
+}
+
+// Create a Supabase client with environment variables
+function createSupabaseClient() {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  
+  console.log("Database connection available:", !!supabaseUrl && !!supabaseServiceKey);
+  
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
+
+// Create an initial record in the database
+async function createInitialRecord(supabase: any, listingUrl: string) {
+  console.log(`Creating initial record for URL: ${listingUrl}`);
+  
+  const { data, error } = await supabase
+    .from('listing_raw')
+    .insert([{ 
+      listing_url: listingUrl,
+      status: 'pending',
+      json: { url: listingUrl }
+    }])
+    .select('id');
+  
+  if (error) {
+    console.error("Error creating initial record:", error);
+    throw new Error(`Failed to create database record: ${error.message}`);
   }
-
-  try {
-    console.log("Scrape-airbnb function invoked");
-    
-    // Get the listingUrl from the request body
-    const { listingUrl } = await req.json();
-    
-    if (!listingUrl) {
-      console.error("Missing listing URL in request");
-      return new Response(
-        JSON.stringify({ error: "Listing URL is required" }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-    
-    console.log(`Processing listing URL: ${listingUrl}`);
-    
-    // Create a record in the database to store the raw results
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-    
-    console.log("Database connection available:", !!supabaseUrl && !!supabaseServiceKey);
-    
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
-    // Create an initial record to store the Apify results
-    const { data: recordData, error: recordError } = await supabase
-      .from('listing_raw')
-      .insert([{ 
-        listing_url: listingUrl,
-        status: 'pending',
-        json: { url: listingUrl }
-      }])
-      .select('id');
-    
-    if (recordError) {
-      console.error("Error creating initial record:", recordError);
-      return new Response(
-        JSON.stringify({ error: `Failed to create database record: ${recordError.message}` }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-    
-    if (!recordData || recordData.length === 0) {
-      console.error("No record ID returned after insert");
-      return new Response(
-        JSON.stringify({ error: "Failed to create database record: No ID returned" }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-    
-    const recordId = recordData[0].id;
-    console.log(`Created record with ID: ${recordId}`);
-    
-    // Call Apify synchronously
-    try {
-      console.log("Calling Apify API synchronously...");
-      const apifyResult = await callApifyActorSync(listingUrl);
-      
-      if (apifyResult) {
-        // Update the record with the result
-        const { error: updateError } = await supabase
-          .from('listing_raw')
-          .update({ 
-            status: 'success',
-            json: apifyResult
-          })
-          .eq('id', recordId);
-        
-        if (updateError) {
-          console.error(`Error updating record ${recordId}:`, updateError);
-          return new Response(
-            JSON.stringify({ error: `Failed to update record: ${updateError.message}`, recordId }),
-            { 
-              status: 500, 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-            }
-          );
-        }
-
-        console.log(`Successfully updated record ${recordId} with Apify data`);
-      } else {
-        // Handle empty result
-        await updateRecordWithError(supabase, recordId, listingUrl, "No data returned from analysis service");
-      }
-    } catch (error) {
-      console.error("Apify API error:", error);
-      await updateRecordWithError(supabase, recordId, listingUrl, error.message);
-      // Still return the recordId so the UI can show the error
-    }
-    
-    // Return the record ID for the frontend to use
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "Analysis started", 
-        recordId 
-      }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
-  } catch (error) {
-    console.error("Unexpected error:", error);
-    return new Response(
-      JSON.stringify({ error: `Internal server error: ${error.message}` }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+  
+  if (!data || data.length === 0) {
+    console.error("No record ID returned after insert");
+    throw new Error("Failed to create database record: No ID returned");
   }
-});
+  
+  const recordId = data[0].id;
+  console.log(`Created record with ID: ${recordId}`);
+  return recordId;
+}
 
-async function updateRecordWithError(supabase, recordId, listingUrl, errorMessage) {
+// Update a record with an error message
+async function updateRecordWithError(supabase: any, recordId: number, listingUrl: string, errorMessage: string) {
   try {
     const { error } = await supabase
       .from('listing_raw')
@@ -159,7 +81,8 @@ async function updateRecordWithError(supabase, recordId, listingUrl, errorMessag
   }
 }
 
-async function callApifyActorSync(listingUrl) {
+// Call the Apify actor synchronously
+async function callApifyActorSync(listingUrl: string) {
   const apifyApiKey = Deno.env.get('APIFY_API_KEY');
   if (!apifyApiKey) {
     throw new Error("Missing APIFY_API_KEY environment variable");
@@ -220,3 +143,85 @@ async function callApifyActorSync(listingUrl) {
     };
   }
 }
+
+// Update a record with successful result
+async function updateRecordWithSuccess(supabase: any, recordId: number, apifyResult: any) {
+  const { error } = await supabase
+    .from('listing_raw')
+    .update({ 
+      status: 'success',
+      json: apifyResult
+    })
+    .eq('id', recordId);
+  
+  if (error) {
+    console.error(`Error updating record ${recordId}:`, error);
+    throw new Error(`Failed to update record: ${error.message}`);
+  }
+
+  console.log(`Successfully updated record ${recordId} with Apify data`);
+}
+
+// Process the Airbnb listing
+async function processAirbnbListing(listingUrl: string) {
+  console.log(`Processing listing URL: ${listingUrl}`);
+  
+  // Create a Supabase client
+  const supabase = createSupabaseClient();
+  
+  // Create an initial record
+  const recordId = await createInitialRecord(supabase, listingUrl);
+  
+  // Call Apify synchronously
+  try {
+    console.log("Calling Apify API synchronously...");
+    const apifyResult = await callApifyActorSync(listingUrl);
+    
+    if (apifyResult) {
+      // Update the record with the result
+      await updateRecordWithSuccess(supabase, recordId, apifyResult);
+    } else {
+      // Handle empty result
+      await updateRecordWithError(supabase, recordId, listingUrl, "No data returned from analysis service");
+    }
+  } catch (error) {
+    console.error("Apify API error:", error);
+    await updateRecordWithError(supabase, recordId, listingUrl, error.message);
+    // Still return the recordId so the UI can show the error
+  }
+  
+  return recordId;
+}
+
+// Main function handler
+Deno.serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    console.log("Scrape-airbnb function invoked");
+    
+    // Get the listingUrl from the request body
+    const { listingUrl } = await req.json();
+    
+    if (!listingUrl) {
+      console.error("Missing listing URL in request");
+      return createResponse({ error: "Listing URL is required" }, 400);
+    }
+    
+    // Process the Airbnb listing
+    const recordId = await processAirbnbListing(listingUrl);
+    
+    // Return the record ID for the frontend to use
+    return createResponse({ 
+      success: true, 
+      message: "Analysis started", 
+      recordId 
+    });
+  } catch (error) {
+    console.error("Unexpected error:", error);
+    return createResponse({ error: `Internal server error: ${error.message}` }, 500);
+  }
+});
