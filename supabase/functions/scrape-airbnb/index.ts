@@ -1,3 +1,4 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.0'
 
 const corsHeaders = {
@@ -103,19 +104,30 @@ async function processListingInBackground(listingUrl, recordId, supabase) {
     const apifyResult = await callApifyActor(listingUrl);
     console.log(`Apify processing complete for record ${recordId}`);
     
-    // Check if we got a valid response with data
-    if (!apifyResult || typeof apifyResult !== 'object') {
-      console.error(`Invalid Apify result for record ${recordId}:`, apifyResult);
-      await updateRecordWithError(supabase, recordId, "Invalid response from analysis service");
+    // Ensure we have a valid response
+    if (!apifyResult) {
+      console.error(`Empty Apify result for record ${recordId}`);
+      await updateRecordWithError(supabase, recordId, "Empty response from analysis service");
       return;
     }
     
-    // Make sure to process the result properly based on what Apify returns
-    let finalResult = {
+    // Prepare the final result with proper structure
+    const finalResult = {
       status: 'success',
       url: listingUrl,
-      data: apifyResult
+      data: apifyResult,
+      updatedAt: new Date().toISOString()
     };
+    
+    // Log the structure before saving to help with debugging
+    console.log(`Saving result structure:`, {
+      status: finalResult.status,
+      url: finalResult.url,
+      dataType: typeof finalResult.data,
+      dataIsNull: finalResult.data === null,
+      dataKeys: finalResult.data ? Object.keys(finalResult.data) : [],
+      updatedAt: finalResult.updatedAt
+    });
     
     // Update the record with the successful result
     const { error: updateError } = await supabase
@@ -146,7 +158,7 @@ async function updateRecordWithError(supabase, recordId, errorMessage) {
         } 
       })
       .eq('id', recordId);
-    console.log(`Updated record ${recordId} with error status`);
+    console.log(`Updated record ${recordId} with error status: ${errorMessage}`);
   } catch (err) {
     console.error(`Failed to update error status for record ${recordId}:`, err);
   }
@@ -156,8 +168,8 @@ async function callApifyActor(listingUrl) {
   try {
     console.log(`Calling Apify actor for URL: ${listingUrl}`);
     
-    // Mock response for now - replace with actual Apify API call
-    // This is a placeholder to ensure we return a 200 response
+    // For now, return a mock successful response that's properly structured
+    // This will help us test the data flow without actual Apify integration
     return {
       title: "Sample Airbnb Listing",
       price: "$150 per night",
@@ -176,12 +188,13 @@ async function callApifyActor(listingUrl) {
       }
     };
     
-    // Actual implementation would look something like this:
-    /*
+    /* 
+    // When you're ready to integrate with the actual Apify API:
     const apifyApiKey = Deno.env.get('APIFY_API_KEY');
     const actorId = 'apify/website-content-crawler'; // Replace with your actual actor ID
     
-    const response = await fetch(`https://api.apify.com/v2/acts/${actorId}/runs?token=${apifyApiKey}`, {
+    // Start the actor run
+    const startResponse = await fetch(`https://api.apify.com/v2/acts/${actorId}/runs?token=${apifyApiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -192,28 +205,49 @@ async function callApifyActor(listingUrl) {
       }),
     });
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Apify API returned ${response.status}: ${errorText}`);
+    if (!startResponse.ok) {
+      const errorText = await startResponse.text();
+      throw new Error(`Apify API returned ${startResponse.status}: ${errorText}`);
     }
     
-    const runData = await response.json();
-    const runId = runData.data.id;
+    const startData = await startResponse.json();
+    const runId = startData.data.id;
+    console.log(`Apify run started with ID: ${runId}`);
     
     // Poll for results
     let result;
     let attempts = 0;
-    while (attempts < 30) {
+    const maxAttempts = 30;
+    
+    while (attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
       
       const resultResponse = await fetch(`https://api.apify.com/v2/actor-runs/${runId}/dataset/items?token=${apifyApiKey}`);
-      if (resultResponse.ok) {
-        const items = await resultResponse.json();
-        if (items && items.length > 0) {
-          result = items[0];
-          break;
-        }
+      
+      if (!resultResponse.ok) {
+        console.warn(`Attempt ${attempts + 1}/${maxAttempts}: Apify result fetch returned status ${resultResponse.status}`);
+        attempts++;
+        continue;
       }
+      
+      // Safely parse the JSON response
+      let items;
+      try {
+        const responseText = await resultResponse.text();
+        console.log(`Raw Apify response (first 200 chars): ${responseText.substring(0, 200)}...`);
+        items = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error(`Failed to parse Apify response: ${parseError.message}`);
+        throw new Error(`Failed to parse Apify response: ${parseError.message}`);
+      }
+      
+      if (items && items.length > 0) {
+        result = items[0];
+        console.log(`Found results after ${attempts + 1} attempts`);
+        break;
+      }
+      
+      console.log(`Attempt ${attempts + 1}/${maxAttempts}: No results yet`);
       attempts++;
     }
     

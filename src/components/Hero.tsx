@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -59,19 +58,18 @@ const Hero = () => {
   const checkRecordDetails = async (id: number) => {
     try {
       console.log(`Checking details for record ID: ${id}`);
-      const response = await supabase.functions.invoke("check-record", {
+      const { data, error } = await supabase.functions.invoke("check-record", {
         body: { recordId: id },
       });
       
       // Check if the function call itself was successful
-      if (response.error) {
-        console.error("Edge function error:", response.error);
-        setRecordError(`Edge Function error: ${response.error.message || response.error}`);
+      if (error) {
+        console.error("Edge function error:", error);
+        setRecordError(`Edge Function error: ${error.message || String(error)}`);
         return false;
       }
       
       // Check the data returned by the function
-      const data = response.data;
       console.log("Record details:", data);
       
       if (!data || data.error) {
@@ -131,11 +129,10 @@ const Hero = () => {
       
       console.log("Function response:", response);
 
-      // Handle function response
       if (response.error) {
         console.error("Edge function error:", response.error);
         toast.dismiss(toastId);
-        toast.error(`Failed to analyze your listing: Edge Function error (${response.status})`);
+        toast.error(`Failed to analyze your listing: ${response.error}`);
         return;
       }
 
