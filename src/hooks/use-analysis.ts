@@ -56,17 +56,21 @@ export const useAnalysis = (id: string | undefined) => {
         
         // More detailed logging of response_data
         if (data.response_data) {
-          const responseType = typeof data.response_data;
-          console.log("Response data type:", responseType);
+          console.log("Response data type:", typeof data.response_data);
           
-          if (responseType === 'string') {
+          if (typeof data.response_data === 'string') {
             console.log("Response data length:", data.response_data.length);
             console.log("Response data first 100 chars:", data.response_data.substring(0, 100));
             console.log("Response data last 100 chars:", data.response_data.substring(data.response_data.length - 100));
-          } else if (responseType === 'object') {
+            
+            // Special check for the specific analysis ID
+            if (id === "fed49745-cbe0-4417-b927-d42d521c979e") {
+              console.log("FULL RESPONSE DATA FOR DEBUGGING:", data.response_data);
+            }
+          } else if (typeof data.response_data === 'object') {
             console.log("Response data is an object with keys:", Object.keys(data.response_data));
           } else {
-            console.log("Response data is neither string nor object");
+            console.log("Response data is neither string nor object, actual type:", typeof data.response_data);
           }
         } else {
           console.warn("No response_data in the analysis record!");

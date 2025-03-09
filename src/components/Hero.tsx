@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
@@ -42,54 +43,83 @@ const Hero = () => {
       
       // Call the Apify API (this will now run in the background after redirect)
       console.log("Calling Apify API with URL:", airbnbUrl);
-      const response = await fetch(
-        "https://api.apify.com/v2/acts/onidivo~airbnb-scraper/run-sync?token=apify_api_f9jP7gJSAGmtxpmpSmfEsMUTo9wLtu26VBXn",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            addMoreHostInfo: false,
-            calendarMonths: 0,
-            currency: "USD",
-            extraData: true,
-            limitPoints: 100,
-            maxConcurrency: 50,
-            maxItems: 1,
-            maxReviews: 100,
-            proxyConfiguration: {
-              useApifyProxy: true
-            },
-            startUrls: [
-              {
-                url: airbnbUrl,
-                method: "GET"
-              }
-            ],
-            timeoutMs: 600000
-          }),
-        }
-      );
+      const apifyUrl = "https://api.apify.com/v2/acts/onidivo~airbnb-scraper/run-sync?token=apify_api_f9jP7gJSAGmtxpmpSmfEsMUTo9wLtu26VBXn";
+      console.log("Full Apify API URL:", apifyUrl);
+      
+      const requestBody = {
+        addMoreHostInfo: false,
+        calendarMonths: 0,
+        currency: "USD",
+        extraData: true,
+        limitPoints: 100,
+        maxConcurrency: 50,
+        maxItems: 1,
+        maxReviews: 100,
+        proxyConfiguration: {
+          useApifyProxy: true
+        },
+        startUrls: [
+          {
+            url: airbnbUrl,
+            method: "GET"
+          }
+        ],
+        timeoutMs: 600000
+      };
+      
+      console.log("Apify request body:", JSON.stringify(requestBody));
+      
+      const response = await fetch(apifyUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
 
       console.log("Apify API response status:", response.status);
+      console.log("Apify API response statusText:", response.statusText);
       console.log("Apify API response headers:", Object.fromEntries([...response.headers.entries()]));
       
       if (!response.ok) {
-        console.error(`API request failed with status ${response.status}`);
-        throw new Error(`API request failed with status ${response.status}`);
+        console.error(`API request failed with status ${response.status}: ${response.statusText}`);
+        throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
       }
 
       // Get the response as text first for debugging
       const responseText = await response.text();
       console.log("Apify API raw response length:", responseText.length);
-      console.log("Apify API raw response first 100 chars:", responseText.substring(0, 100));
-      console.log("Apify API raw response last 100 chars:", responseText.substring(responseText.length - 100));
+      
+      if (responseText.length > 0) {
+        console.log("Apify API raw response first 100 chars:", responseText.substring(0, 100));
+        console.log("Apify API raw response last 100 chars:", responseText.substring(responseText.length - 100));
+      } else {
+        console.error("Received empty response text from Apify API");
+      }
       
       // Check if the response is actually empty
       if (!responseText || responseText.trim() === '') {
         console.error("Received empty response from Apify API");
-        throw new Error("Received empty response from Apify API");
+        
+        // Update the database record with failed status
+        await supabase
+          .from('airbnb_analyses')
+          .update({ 
+            status: 'failed',
+            error_message: "Received empty response from Apify API" 
+          })
+          .eq('id', analysisRecord.id);
+          
+        return;
+      }
+      
+      // Try to parse as JSON to validate it's proper JSON
+      try {
+        JSON.parse(responseText);
+        console.log("Successfully parsed response as JSON");
+      } catch (parseError) {
+        console.error("Response is not valid JSON:", parseError);
+        console.log("Non-JSON response received, storing as raw text");
       }
       
       // Update the database record with successful status and raw response data

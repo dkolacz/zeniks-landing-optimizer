@@ -7,7 +7,7 @@ interface AnalysisResultProps {
 }
 
 const AnalysisResult = ({ listingData, listingUrl }: AnalysisResultProps) => {
-  console.log("AnalysisResult - Rendering with raw listingData:", listingData);
+  console.log("AnalysisResult - Rendering with raw listingData type:", typeof listingData);
   
   // Check if the data is empty
   if (!listingData) {
@@ -38,6 +38,34 @@ const AnalysisResult = ({ listingData, listingUrl }: AnalysisResultProps) => {
   if (typeof listingData === 'string') {
     console.log("AnalysisResult - listingData is a string, attempting to parse");
     try {
+      // Check if the string is actually empty or whitespace
+      if (!listingData.trim()) {
+        console.error("AnalysisResult - listingData string is empty or whitespace");
+        return (
+          <div className="py-10 px-4">
+            <Card className="max-w-5xl mx-auto">
+              <CardHeader>
+                <CardTitle className="text-2xl">Airbnb Listing Analysis</CardTitle>
+                <CardDescription>
+                  Analysis results for: <a href={listingUrl} target="_blank" rel="noopener noreferrer" className="text-zeniks-purple hover:underline">{listingUrl}</a>
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="prose max-w-none">
+                  <h3 className="text-xl font-semibold text-red-600">Empty Response</h3>
+                  <p>We received an empty string from the API.</p>
+                  <p>The API may have encountered an issue while scraping this particular listing. Please try again or try with a different Airbnb listing URL.</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      }
+      
+      // Log the raw string data for debugging
+      console.log("AnalysisResult - Raw string data (first 100 chars):", listingData.substring(0, 100));
+      console.log("AnalysisResult - Raw string data (last 100 chars):", listingData.substring(listingData.length - 100));
+      
       processedData = JSON.parse(listingData);
       console.log("AnalysisResult - Successfully parsed string data to JSON");
     } catch (error) {
@@ -82,6 +110,8 @@ const AnalysisResult = ({ listingData, listingUrl }: AnalysisResultProps) => {
   }
 
   // Main return for valid data
+  console.log("AnalysisResult - Final processed data object keys:", Object.keys(processedData));
+  
   return (
     <div className="py-10 px-4">
       <Card className="max-w-5xl mx-auto">
