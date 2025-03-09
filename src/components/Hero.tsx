@@ -1,17 +1,51 @@
 
 import { useState } from "react";
-import { ArrowRight, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const Hero = () => {
   const [airbnbUrl, setAirbnbUrl] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const handleAnalyze = () => {
-    if (airbnbUrl) {
-      // When we have a proper implementation, we would handle the URL here
-      console.log("Analyzing URL:", airbnbUrl);
-      // For now, just scroll to contact section
+  const handleAnalyze = async () => {
+    if (!airbnbUrl) {
+      toast.error("Please enter an Airbnb listing URL");
+      return;
+    }
+
+    if (!airbnbUrl.includes("airbnb.com")) {
+      toast.error("Please enter a valid Airbnb listing URL");
+      return;
+    }
+
+    try {
+      setIsAnalyzing(true);
+      toast.loading("Analyzing your Airbnb listing. This may take a minute...");
+
+      const { data, error } = await supabase.functions.invoke("scrape-airbnb", {
+        body: { listingUrl: airbnbUrl },
+      });
+
+      if (error) {
+        console.error("Error analyzing listing:", error);
+        toast.dismiss();
+        toast.error("Failed to analyze your listing. Please try again.");
+        return;
+      }
+
+      toast.dismiss();
+      toast.success("Listing analyzed successfully!");
+      
+      // Scroll to contact section as a next step
       document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
+    } catch (error) {
+      console.error("Unexpected error:", error);
+      toast.dismiss();
+      toast.error("Something went wrong. Please try again later.");
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -37,13 +71,15 @@ const Hero = () => {
                 className="flex-1 py-6 text-base"
                 value={airbnbUrl}
                 onChange={(e) => setAirbnbUrl(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
+                onKeyDown={(e) => e.key === "Enter" && !isAnalyzing && handleAnalyze()}
+                disabled={isAnalyzing}
               />
               <button
                 onClick={handleAnalyze}
-                className="bg-zeniks-purple text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-opacity-90 transition-all flex items-center justify-center gap-2 group"
+                disabled={isAnalyzing}
+                className="bg-zeniks-purple text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-opacity-90 transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                Analyze
+                {isAnalyzing ? "Analyzing..." : "Analyze"}
                 <Search className="h-5 w-5 group-hover:scale-110 transition-transform" />
               </button>
             </div>
