@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 const Hero = () => {
   const [airbnbUrl, setAirbnbUrl] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [recordId, setRecordId] = useState<number | null>(null);
 
   const handleAnalyze = async () => {
     if (!airbnbUrl) {
@@ -22,7 +23,7 @@ const Hero = () => {
 
     try {
       setIsAnalyzing(true);
-      toast.loading("Analyzing your Airbnb listing. This may take a minute...");
+      const toastId = toast.loading("Analyzing your Airbnb listing. This may take a minute...");
 
       const { data, error } = await supabase.functions.invoke("scrape-airbnb", {
         body: { listingUrl: airbnbUrl },
@@ -30,16 +31,27 @@ const Hero = () => {
 
       if (error) {
         console.error("Error analyzing listing:", error);
-        toast.dismiss();
+        toast.dismiss(toastId);
         toast.error("Failed to analyze your listing. Please try again.");
         return;
       }
 
-      toast.dismiss();
-      toast.success("Listing analyzed successfully!");
+      // Store the record ID for future reference
+      if (data && data.recordId) {
+        setRecordId(data.recordId);
+      }
+
+      toast.dismiss(toastId);
       
-      // Scroll to contact section as a next step
-      document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
+      if (data && data.success) {
+        toast.success("Listing analyzed successfully!");
+        
+        // Optional: Scroll to contact section as a next step
+        document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
+      } else {
+        const statusMessage = data?.status ? `(Status: ${data.status})` : '';
+        toast.error(`Analysis encountered an issue ${statusMessage}`);
+      }
     } catch (error) {
       console.error("Unexpected error:", error);
       toast.dismiss();
@@ -83,6 +95,12 @@ const Hero = () => {
                 <Search className="h-5 w-5 group-hover:scale-110 transition-transform" />
               </button>
             </div>
+            
+            {recordId && (
+              <div className="mt-4 text-sm text-zeniks-gray-dark">
+                Analysis ID: {recordId}
+              </div>
+            )}
           </div>
         </div>
       </div>
