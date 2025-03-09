@@ -111,7 +111,45 @@ const Analysis = () => {
 
     // Success case
     if (analysis?.status === 'success' && analysis?.response_data) {
-      const listingData = Array.isArray(analysis.response_data) ? analysis.response_data[0] : analysis.response_data;
+      // Safely extract data from response_data
+      let listingData;
+      
+      try {
+        // Handle different response formats
+        if (typeof analysis.response_data === 'string') {
+          listingData = JSON.parse(analysis.response_data);
+        } else {
+          listingData = analysis.response_data;
+        }
+        
+        // If response is an array, take the first item
+        if (Array.isArray(listingData)) {
+          listingData = listingData[0];
+        }
+      } catch (error) {
+        console.error("Error parsing response data:", error);
+        return (
+          <div className="py-10 px-4">
+            <Card className="max-w-5xl mx-auto">
+              <CardHeader>
+                <CardTitle className="text-2xl">Data Error</CardTitle>
+                <CardDescription>
+                  There was an error processing the analysis results.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p>The raw response could not be processed. Please try analyzing the listing again.</p>
+                <button
+                  onClick={() => navigate("/")}
+                  className="bg-zeniks-purple text-white px-6 py-2 rounded-lg mt-4 hover:bg-opacity-90 transition-all"
+                >
+                  Try Again
+                </button>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      }
       
       return (
         <div className="py-10 px-4">

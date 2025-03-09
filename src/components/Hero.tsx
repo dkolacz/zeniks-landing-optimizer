@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
@@ -69,7 +70,22 @@ const Hero = () => {
         throw new Error(`API request failed with status ${response.status}`);
       }
 
-      const data = await response.json();
+      // Safely parse the response text
+      const responseText = await response.text();
+      let data;
+      
+      try {
+        // Only try to parse as JSON if there's actual content
+        if (responseText && responseText.trim()) {
+          data = JSON.parse(responseText);
+        } else {
+          throw new Error("Empty response from API");
+        }
+      } catch (parseError) {
+        console.error("Failed to parse JSON response:", responseText);
+        throw new Error(`Failed to parse API response: ${parseError.message}`);
+      }
+      
       console.log("Apify API Response:", data);
       
       // Update the database record with successful status and response data
