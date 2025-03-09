@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
       .from('listing_raw')
       .insert([{ json: { status: 'pending', url: listingUrl } }])
       .select('id')
-      .maybeSingle();  // Changed from single() to maybeSingle()
+      .maybeSingle();
     
     if (recordError) {
       console.error("Error creating initial record:", recordError);
@@ -184,45 +184,35 @@ async function callApifyActor(listingUrl) {
   try {
     console.log(`Calling Apify actor for URL: ${listingUrl}`);
     
-    // For now, return a mock successful response that's properly structured
-    // This will help us test the data flow without actual Apify integration
-    return {
-      title: "Sample Airbnb Listing",
-      price: "$150 per night",
-      location: "Sample Location",
-      rooms: 2,
-      beds: 3,
-      baths: 1,
-      amenities: ["WiFi", "Kitchen", "Free parking"],
-      host: {
-        name: "Sample Host",
-        rating: 4.8
-      },
-      reviews: {
-        count: 25,
-        average: 4.7
-      }
+    const apifyApiKey = Deno.env.get('APIFY_API_KEY');
+    if (!apifyApiKey) {
+      throw new Error("Missing APIFY_API_KEY environment variable");
+    }
+    
+    // Configure Apify actor
+    const actorId = 'apify/website-content-crawler'; // Replace with your actual actor ID
+    console.log(`Using Apify actor ID: ${actorId}`);
+    
+    // Prepare the input for the Apify actor
+    const input = {
+      startUrls: [{ url: listingUrl }],
+      maxCrawlPages: 1,
+      forceResponseEncoding: false,
+      proxyConfiguration: { useApifyProxy: true }
     };
     
-    /* 
-    // When you're ready to integrate with the actual Apify API:
-    const apifyApiKey = Deno.env.get('APIFY_API_KEY');
-    const actorId = 'apify/website-content-crawler'; // Replace with your actual actor ID
+    console.log("Starting Apify run with input:", JSON.stringify(input));
     
     // Start the actor run
     const startResponse = await fetch(`https://api.apify.com/v2/acts/${actorId}/runs?token=${apifyApiKey}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        startUrls: [{ url: listingUrl }],
-        maxCrawlPages: 1
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
     });
     
     if (!startResponse.ok) {
       const errorText = await startResponse.text();
+      console.error(`Apify API error (${startResponse.status}):`, errorText);
       throw new Error(`Apify API returned ${startResponse.status}: ${errorText}`);
     }
     
@@ -231,48 +221,80 @@ async function callApifyActor(listingUrl) {
     console.log(`Apify run started with ID: ${runId}`);
     
     // Poll for results
-    let result;
+    let result = null;
     let attempts = 0;
-    const maxAttempts = 30;
+    const maxAttempts = 30; // 30 attempts * 5 seconds = 2.5 minutes max wait
     
     while (attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+      await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds between checks
       
-      const resultResponse = await fetch(`https://api.apify.com/v2/actor-runs/${runId}/dataset/items?token=${apifyApiKey}`);
+      console.log(`Checking run status (attempt ${attempts + 1}/${maxAttempts})...`);
+      const statusResponse = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${apifyApiKey}`);
       
-      if (!resultResponse.ok) {
-        console.warn(`Attempt ${attempts + 1}/${maxAttempts}: Apify result fetch returned status ${resultResponse.status}`);
+      if (!statusResponse.ok) {
+        console.warn(`Run status check failed (${statusResponse.status}): ${await statusResponse.text()}`);
         attempts++;
         continue;
       }
       
-      // Safely parse the JSON response
-      let items;
-      try {
-        const responseText = await resultResponse.text();
-        console.log(`Raw Apify response (first 200 chars): ${responseText.substring(0, 200)}...`);
-        items = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error(`Failed to parse Apify response: ${parseError.message}`);
-        throw new Error(`Failed to parse Apify response: ${parseError.message}`);
+      const statusData = await statusResponse.json();
+      const status = statusData.data.status;
+      console.log(`Run status: ${status}`);
+      
+      if (status === 'SUCCEEDED') {
+        // Try to get dataset items
+        const resultResponse = await fetch(`https://api.apify.com/v2/actor-runs/${runId}/dataset/items?token=${apifyApiKey}`);
+        
+        if (!resultResponse.ok) {
+          console.error(`Failed to fetch dataset (${resultResponse.status}): ${await resultResponse.text()}`);
+          throw new Error(`Failed to fetch dataset: ${resultResponse.status}`);
+        }
+        
+        // Parse response, handling errors carefully
+        try {
+          const responseText = await resultResponse.text();
+          console.log(`Received dataset response (${responseText.length} bytes)`);
+          
+          if (responseText.trim() === '') {
+            console.log("Empty response from Apify dataset");
+            result = { 
+              warning: "No data extracted from the page",
+              extracted: false
+            };
+            break;
+          }
+          
+          const items = JSON.parse(responseText);
+          
+          if (Array.isArray(items) && items.length > 0) {
+            console.log(`Found ${items.length} items in dataset`);
+            result = items[0]; // Get the first item (as we limited to 1 page)
+            break;
+          } else {
+            console.log("No items in dataset");
+            result = { 
+              warning: "Page crawled but no content extracted",
+              extracted: false
+            };
+            break;
+          }
+        } catch (parseError) {
+          console.error(`Failed to parse Apify response: ${parseError.message}`);
+          throw new Error(`Failed to parse Apify response: ${parseError.message}`);
+        }
+      } else if (status === 'FAILED' || status === 'ABORTED' || status === 'TIMED-OUT') {
+        console.error(`Apify run failed with status: ${status}`);
+        throw new Error(`Apify run ${status}`);
       }
       
-      if (items && items.length > 0) {
-        result = items[0];
-        console.log(`Found results after ${attempts + 1} attempts`);
-        break;
-      }
-      
-      console.log(`Attempt ${attempts + 1}/${maxAttempts}: No results yet`);
       attempts++;
     }
     
-    if (!result) {
+    if (!result && attempts >= maxAttempts) {
       throw new Error("Timed out waiting for analysis results");
     }
     
     return result;
-    */
   } catch (error) {
     console.error("Error calling Apify actor:", error);
     throw error;

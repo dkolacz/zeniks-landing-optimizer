@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -125,7 +126,7 @@ const Hero = () => {
     try {
       setIsAnalyzing(true);
       setRecordError(null); // Clear any previous error
-      const toastId = toast.loading("Analyzing your Airbnb listing. This may take a minute...");
+      const toastId = toast.loading("Analyzing your Airbnb listing. This may take up to 2 minutes...");
 
       console.log("Invoking scrape-airbnb function with URL:", airbnbUrl);
       
@@ -148,8 +149,11 @@ const Hero = () => {
       if (data && data.recordId) {
         setRecordId(data.recordId);
         
+        // Display a toast with the record ID for debugging
+        toast.info(`Analysis started with ID: ${data.recordId}`);
+        
         // Wait a moment to allow background processing to start
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await new Promise(resolve => setTimeout(resolve, 5000));
         
         // Check the record status directly to handle edge cases
         const isSuccess = await checkRecordStatus(data.recordId);
@@ -168,7 +172,7 @@ const Hero = () => {
         } else if (recordError) {
           toast.error(recordError);
         } else {
-          toast.info("Analysis started, we'll update you when it's complete.");
+          toast.info("Analysis started, we'll update you when it's complete. This may take up to 2 minutes.");
         }
       } else {
         toast.dismiss(toastId);
@@ -188,7 +192,9 @@ const Hero = () => {
     if (recordId) {
       const checkStatus = async () => {
         const isSuccess = await checkRecordStatus(recordId);
-        if (!isSuccess && recordError) {
+        if (isSuccess) {
+          toast.success("Listing analysis complete!");
+        } else if (recordError) {
           toast.error(recordError);
         }
       };
