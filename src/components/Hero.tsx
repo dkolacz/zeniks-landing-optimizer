@@ -1,17 +1,17 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { ArrowRight, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 const Hero = () => {
   const [airbnbUrl, setAirbnbUrl] = useState("");
-  const navigate = useNavigate();
 
   const handleAnalyze = () => {
     if (airbnbUrl) {
-      // Navigate to the analysis page with the URL as a query parameter
-      navigate(`/analysis?url=${encodeURIComponent(airbnbUrl)}`);
+      // When we have a proper implementation, we would handle the URL here
+      console.log("Analyzing URL:", airbnbUrl);
+      // For now, just scroll to contact section
+      document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
     }
   };
 
