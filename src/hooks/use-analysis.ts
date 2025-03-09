@@ -53,12 +53,41 @@ export const useAnalysis = (id: string | undefined) => {
 
         console.log("Fetched analysis data from DB:", data);
         console.log("Analysis status:", data.status);
+        console.log("Analysis URL:", data.listing_url);
         
         // Check if we have raw_response
         if (data.raw_response) {
           console.log("Raw response available, length:", data.raw_response.length);
-          console.log("Raw response first 100 chars:", data.raw_response.substring(0, 100));
-          console.log("Raw response last 100 chars:", data.raw_response.substring(data.raw_response.length - 100));
+          
+          // Log first and last 100 chars of raw_response for debugging
+          if (data.raw_response.length > 200) {
+            console.log("Raw response first 100 chars:", data.raw_response.substring(0, 100));
+            console.log("Raw response last 100 chars:", data.raw_response.substring(data.raw_response.length - 100));
+          } else {
+            console.log("Raw response (full):", data.raw_response);
+          }
+          
+          // Try to parse the raw_response to see if it's valid JSON
+          try {
+            const parsedRawResponse = JSON.parse(data.raw_response);
+            console.log("Raw response is valid JSON with keys:", Object.keys(parsedRawResponse));
+            
+            // If response_data is empty but raw_response has valid data, update response_data
+            if (!data.response_data && data.status === 'success') {
+              console.log("Found valid JSON in raw_response but empty response_data, updating record");
+              await supabase
+                .from('airbnb_analyses')
+                .update({ 
+                  response_data: parsedRawResponse 
+                })
+                .eq('id', id);
+                
+              // Update local data with the parsed response
+              data.response_data = parsedRawResponse;
+            }
+          } catch (parseError) {
+            console.error("Raw response is not valid JSON:", parseError);
+          }
         } else {
           console.log("No raw_response found");
         }
@@ -71,10 +100,15 @@ export const useAnalysis = (id: string | undefined) => {
             try {
               // Perform a validation check by parsing and stringifying
               const jsonCheck = JSON.parse(data.response_data);
-              console.log("Successfully validated JSON data structure");
+              console.log("Successfully validated JSON data structure with keys:", Object.keys(jsonCheck));
               console.log("Response data length:", data.response_data.length);
-              console.log("Response data first 100 chars:", data.response_data.substring(0, 100));
-              console.log("Response data last 100 chars:", data.response_data.substring(data.response_data.length - 100));
+              
+              if (data.response_data.length > 200) {
+                console.log("Response data first 100 chars:", data.response_data.substring(0, 100));
+                console.log("Response data last 100 chars:", data.response_data.substring(data.response_data.length - 100));
+              } else {
+                console.log("Response data (full):", data.response_data);
+              }
             } catch (error) {
               console.error("Invalid JSON in response_data:", error);
               
@@ -88,6 +122,19 @@ export const useAnalysis = (id: string | undefined) => {
                     error_message: `Invalid JSON in response_data: ${error instanceof Error ? error.message : 'Unknown error'}` 
                   })
                   .eq('id', id);
+                  
+                // If we have raw_response, try to recover
+                if (data.raw_response) {
+                  console.log("Attempting to recover from raw_response");
+                  try {
+                    const recoveredData = JSON.parse(data.raw_response);
+                    console.log("Successfully recovered data from raw_response");
+                    data.response_data = recoveredData;
+                    data.status = 'success'; // Override the status locally
+                  } catch (recoverError) {
+                    console.error("Failed to recover from raw_response:", recoverError);
+                  }
+                }
               }
             }
           } else if (typeof data.response_data === 'object') {
@@ -97,6 +144,18 @@ export const useAnalysis = (id: string | undefined) => {
           }
         } else {
           console.warn("No response_data in the analysis record!");
+          
+          // If we have raw_response but no response_data, try to parse and use it
+          if (data.raw_response && data.status === 'success') {
+            console.log("Attempting to use raw_response as fallback");
+            try {
+              const fallbackData = JSON.parse(data.raw_response);
+              console.log("Successfully parsed raw_response as fallback data");
+              data.response_data = fallbackData;
+            } catch (fallbackError) {
+              console.error("Failed to use raw_response as fallback:", fallbackError);
+            }
+          }
         }
         
         setAnalysis(data);

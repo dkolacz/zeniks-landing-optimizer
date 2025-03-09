@@ -17,8 +17,11 @@ const Analysis = () => {
     loading, 
     progress, 
     analysisStatus: analysis?.status,
-    hasResponseData: !!analysis?.response_data,
-    hasRawResponse: !!analysis?.raw_response
+    hasResponseData: analysis?.response_data ? true : false,
+    responseDataType: analysis?.response_data ? typeof analysis.response_data : 'none',
+    hasRawResponse: analysis?.raw_response ? true : false,
+    rawResponseLength: analysis?.raw_response ? analysis.raw_response.length : 0,
+    errorMessage: analysis?.error_message
   });
 
   const renderContent = () => {
@@ -29,7 +32,11 @@ const Analysis = () => {
 
     if (analysis?.status === 'failed') {
       console.log("Rendering error state with message:", analysis.error_message);
-      return <AnalysisError errorMessage={analysis.error_message} />;
+      return <AnalysisError 
+        errorMessage={analysis.error_message} 
+        listingUrl={analysis.listing_url}
+        rawResponse={analysis.raw_response}
+      />;
     }
 
     // Success case

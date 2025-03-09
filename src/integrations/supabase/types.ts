@@ -15,6 +15,7 @@ export type Database = {
           error_message: string | null
           id: string
           listing_url: string
+          raw_response: string | null
           response_data: Json | null
           status: string
           updated_at: string
@@ -24,6 +25,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           listing_url: string
+          raw_response?: string | null
           response_data?: Json | null
           status?: string
           updated_at?: string
@@ -33,6 +35,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           listing_url?: string
+          raw_response?: string | null
           response_data?: Json | null
           status?: string
           updated_at?: string
