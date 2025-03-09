@@ -1,6 +1,5 @@
 
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { Toaster } from "sonner";
 import Index from "@/pages/Index";
 import About from "@/pages/About";
 import Blog from "@/pages/Blog";
@@ -12,7 +11,6 @@ import Terms from "@/pages/Terms";
 function App() {
   return (
     <Router>
-      <Toaster position="top-center" />
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/about" element={<About />} />
