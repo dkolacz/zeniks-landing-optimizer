@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ArrowRight, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const Hero = () => {
   const [airbnbUrl, setAirbnbUrl] = useState("");
@@ -15,7 +16,21 @@ const Hero = () => {
     }
     
     setIsLoading(true);
+    
     try {
+      // First create a record in the database with status 'pending'
+      const { data: analysisRecord, error: dbError } = await supabase
+        .from('airbnb_analyses')
+        .insert({
+          listing_url: airbnbUrl,
+          status: 'pending'
+        })
+        .select()
+        .single();
+        
+      if (dbError) throw dbError;
+      
+      // Call the Apify API
       const response = await fetch(
         "https://api.apify.com/v2/acts/onidivo~airbnb-scraper/run-sync?token=apify_api_f9jP7gJSAGmtxpmpSmfEsMUTo9wLtu26VBXn",
         {
@@ -51,18 +66,40 @@ const Hero = () => {
       }
 
       const data = await response.json();
-      console.log("Amplify API Response:", data);
+      console.log("Apify API Response:", data);
+      
+      // Update the database record with successful status and response data
+      const { error: updateError } = await supabase
+        .from('airbnb_analyses')
+        .update({ 
+          status: 'success',
+          response_data: data
+        })
+        .eq('id', analysisRecord.id);
+        
+      if (updateError) throw updateError;
       
       // Show success message
       toast.success("Analysis complete!", {
         description: "Successfully analyzed the Airbnb listing."
       });
       
-      // Handle the response data here
-      // For now, we'll just log it, but you might want to store it or navigate to another page
-      
     } catch (error) {
       console.error("Error analyzing Airbnb listing:", error);
+      
+      // Update the database record with failed status and error message
+      if (error instanceof Error) {
+        await supabase
+          .from('airbnb_analyses')
+          .update({ 
+            status: 'failed',
+            error_message: error.message
+          })
+          .eq('listing_url', airbnbUrl)
+          .order('created_at', { ascending: false })
+          .limit(1);
+      }
+      
       toast.error("Failed to analyze Airbnb listing", {
         description: error instanceof Error ? error.message : "Unknown error occurred"
       });
