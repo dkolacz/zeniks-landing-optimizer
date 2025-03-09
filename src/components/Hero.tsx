@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
@@ -20,141 +19,29 @@ const Hero = () => {
     setIsLoading(true);
     
     try {
-      // First create a record in the database with status 'pending'
-      console.log("Creating database record for URL:", airbnbUrl);
-      const { data: analysisRecord, error: dbError } = await supabase
-        .from('airbnb_analyses')
-        .insert({
-          listing_url: airbnbUrl,
-          status: 'pending'
-        })
-        .select()
-        .single();
-        
-      if (dbError) {
-        console.error("Database error creating record:", dbError);
-        throw dbError;
+      console.log("Calling edge function to analyze URL:", airbnbUrl);
+      
+      // Call the edge function instead of handling the API call directly
+      const { data, error } = await supabase.functions.invoke('analyze-listing', {
+        body: { airbnbUrl }
+      });
+      
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Failed to analyze listing");
       }
       
-      console.log("Created analysis record:", analysisRecord);
+      console.log("Edge function response:", data);
+      
+      if (!data || !data.id) {
+        throw new Error("Invalid response from server");
+      }
       
       // Redirect to the analysis page
-      navigate(`/analysis/${analysisRecord.id}`);
-      
-      // Call the Apify API (this will now run in the background after redirect)
-      console.log("Calling Apify API with URL:", airbnbUrl);
-      const apifyUrl = "https://api.apify.com/v2/acts/onidivo~airbnb-scraper/run-sync?token=apify_api_f9jP7gJSAGmtxpmpSmfEsMUTo9wLtu26VBXn";
-      console.log("Full Apify API URL:", apifyUrl);
-      
-      const requestBody = {
-        addMoreHostInfo: false,
-        calendarMonths: 0,
-        currency: "USD",
-        extraData: true,
-        limitPoints: 100,
-        maxConcurrency: 50,
-        maxItems: 1,
-        maxReviews: 100,
-        proxyConfiguration: {
-          useApifyProxy: true
-        },
-        startUrls: [
-          {
-            url: airbnbUrl,
-            method: "GET"
-          }
-        ],
-        timeoutMs: 600000
-      };
-      
-      console.log("Apify request body:", JSON.stringify(requestBody));
-      
-      const response = await fetch(apifyUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      console.log("Apify API response status:", response.status);
-      console.log("Apify API response statusText:", response.statusText);
-      console.log("Apify API response headers:", Object.fromEntries([...response.headers.entries()]));
-      
-      if (!response.ok) {
-        console.error(`API request failed with status ${response.status}: ${response.statusText}`);
-        throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
-      }
-
-      // Get the response as text first for debugging
-      const responseText = await response.text();
-      console.log("Apify API raw response length:", responseText.length);
-      
-      if (responseText.length > 0) {
-        console.log("Apify API raw response first 100 chars:", responseText.substring(0, 100));
-        console.log("Apify API raw response last 100 chars:", responseText.substring(responseText.length - 100));
-      } else {
-        console.error("Received empty response text from Apify API");
-      }
-      
-      // Check if the response is actually empty
-      if (!responseText || responseText.trim() === '') {
-        console.error("Received empty response from Apify API");
-        
-        // Update the database record with failed status
-        await supabase
-          .from('airbnb_analyses')
-          .update({ 
-            status: 'failed',
-            error_message: "Received empty response from Apify API" 
-          })
-          .eq('id', analysisRecord.id);
-          
-        return;
-      }
-      
-      // Try to parse as JSON to validate it's proper JSON
-      try {
-        JSON.parse(responseText);
-        console.log("Successfully parsed response as JSON");
-      } catch (parseError) {
-        console.error("Response is not valid JSON:", parseError);
-        console.log("Non-JSON response received, storing as raw text");
-      }
-      
-      // Update the database record with successful status and raw response data
-      console.log("Updating analysis record with response data");
-      const { error: updateError } = await supabase
-        .from('airbnb_analyses')
-        .update({ 
-          status: 'success',
-          response_data: responseText  // Store the raw text directly
-        })
-        .eq('id', analysisRecord.id);
-        
-      if (updateError) {
-        console.error("Error updating database record:", updateError);
-        throw updateError;
-      }
-      
-      console.log("Successfully updated analysis record with response data");
+      navigate(`/analysis/${data.id}`);
       
     } catch (error) {
       console.error("Error analyzing Airbnb listing:", error);
-      
-      // Update the database record with failed status and error message
-      if (error instanceof Error) {
-        await supabase
-          .from('airbnb_analyses')
-          .update({ 
-            status: 'failed',
-            error_message: error.message
-          })
-          .eq('listing_url', airbnbUrl)
-          .order('created_at', { ascending: false })
-          .limit(1);
-      }
-      
       toast.error("Failed to analyze listing. Please try again.");
     } finally {
       setIsLoading(false);
