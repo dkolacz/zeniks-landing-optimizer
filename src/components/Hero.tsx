@@ -1,6 +1,6 @@
-
 import { useState } from "react";
-import { ArrowRight, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 const Hero = () => {
   const [airbnbUrl, setAirbnbUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleAnalyze = async () => {
     if (!airbnbUrl) {
@@ -30,7 +31,10 @@ const Hero = () => {
         
       if (dbError) throw dbError;
       
-      // Call the Apify API
+      // Redirect to the analysis page
+      navigate(`/analysis/${analysisRecord.id}`);
+      
+      // Call the Apify API (this will now run in the background after redirect)
       const response = await fetch(
         "https://api.apify.com/v2/acts/onidivo~airbnb-scraper/run-sync?token=apify_api_f9jP7gJSAGmtxpmpSmfEsMUTo9wLtu26VBXn",
         {
@@ -79,11 +83,6 @@ const Hero = () => {
         
       if (updateError) throw updateError;
       
-      // Show success message
-      toast.success("Analysis complete!", {
-        description: "Successfully analyzed the Airbnb listing."
-      });
-      
     } catch (error) {
       console.error("Error analyzing Airbnb listing:", error);
       
@@ -99,10 +98,6 @@ const Hero = () => {
           .order('created_at', { ascending: false })
           .limit(1);
       }
-      
-      toast.error("Failed to analyze Airbnb listing", {
-        description: error instanceof Error ? error.message : "Unknown error occurred"
-      });
     } finally {
       setIsLoading(false);
     }
