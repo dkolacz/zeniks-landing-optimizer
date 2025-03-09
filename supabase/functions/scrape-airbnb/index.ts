@@ -44,12 +44,23 @@ Deno.serve(async (req) => {
       .from('listing_raw')
       .insert([{ json: { status: 'pending', url: listingUrl } }])
       .select('id')
-      .single();
+      .maybeSingle();  // Changed from single() to maybeSingle()
     
     if (recordError) {
       console.error("Error creating initial record:", recordError);
       return new Response(
         JSON.stringify({ error: `Failed to create database record: ${recordError.message}` }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
+    if (!recordData) {
+      console.error("No record ID returned after insert");
+      return new Response(
+        JSON.stringify({ error: "Failed to create database record: No ID returned" }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -148,7 +159,7 @@ async function processListingInBackground(listingUrl, recordId, supabase) {
 
 async function updateRecordWithError(supabase, recordId, errorMessage) {
   try {
-    await supabase
+    const { error } = await supabase
       .from('listing_raw')
       .update({ 
         json: { 
@@ -158,7 +169,12 @@ async function updateRecordWithError(supabase, recordId, errorMessage) {
         } 
       })
       .eq('id', recordId);
-    console.log(`Updated record ${recordId} with error status: ${errorMessage}`);
+    
+    if (error) {
+      console.error(`Failed to update error status for record ${recordId}:`, error);
+    } else {
+      console.log(`Updated record ${recordId} with error status: ${errorMessage}`);
+    }
   } catch (err) {
     console.error(`Failed to update error status for record ${recordId}:`, err);
   }

@@ -39,12 +39,12 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Fetch the record from the database
+    // Fetch the record from the database, using maybeSingle() instead of single()
     const { data, error } = await supabase
       .from('listing_raw')
       .select('*')
       .eq('id', recordId)
-      .single();
+      .maybeSingle();  // Changed from single() to maybeSingle()
 
     if (error) {
       console.error(`Error fetching record: ${error.message}`, error);

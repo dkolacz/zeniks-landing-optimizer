@@ -18,7 +18,7 @@ const Hero = () => {
         .from('listing_raw')
         .select('json')
         .eq('id', id)
-        .single();
+        .maybeSingle();
       
       if (error) {
         console.error(`Error fetching record ${id}:`, error);
@@ -26,7 +26,7 @@ const Hero = () => {
         return false;
       }
       
-      if (!data || !data.json) {
+      if (!data) {
         console.error(`No data found for record ${id}`);
         setRecordError(`No data found for analysis ID: ${id}`);
         return false;
@@ -36,6 +36,12 @@ const Hero = () => {
       
       // Safely check the status property
       const jsonData = data.json as Record<string, any>;
+      
+      if (!jsonData) {
+        setRecordError("No analysis data available yet");
+        return false;
+      }
+      
       const status = jsonData.status;
       console.log(`Record ${id} status:`, status);
       
