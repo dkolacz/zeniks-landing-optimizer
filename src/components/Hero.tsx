@@ -2,16 +2,72 @@
 import { useState } from "react";
 import { ArrowRight, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 const Hero = () => {
   const [airbnbUrl, setAirbnbUrl] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleAnalyze = () => {
-    if (airbnbUrl) {
-      // When we have a proper implementation, we would handle the URL here
-      console.log("Analyzing URL:", airbnbUrl);
-      // For now, just scroll to contact section
-      document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
+  const handleAnalyze = async () => {
+    if (!airbnbUrl) {
+      toast.error("Please enter an Airbnb listing URL");
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const response = await fetch(
+        "https://api.apify.com/v2/acts/onidivo~airbnb-scraper/run-sync?token=apify_api_f9jP7gJSAGmtxpmpSmfEsMUTo9wLtu26VBXn",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            addMoreHostInfo: false,
+            calendarMonths: 0,
+            currency: "USD",
+            extraData: true,
+            limitPoints: 100,
+            maxConcurrency: 50,
+            maxItems: 1,
+            maxReviews: 100,
+            proxyConfiguration: {
+              useApifyProxy: true
+            },
+            startUrls: [
+              {
+                url: airbnbUrl,
+                method: "GET"
+              }
+            ],
+            timeoutMs: 600000
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Amplify API Response:", data);
+      
+      // Show success message
+      toast.success("Analysis complete!", {
+        description: "Successfully analyzed the Airbnb listing."
+      });
+      
+      // Handle the response data here
+      // For now, we'll just log it, but you might want to store it or navigate to another page
+      
+    } catch (error) {
+      console.error("Error analyzing Airbnb listing:", error);
+      toast.error("Failed to analyze Airbnb listing", {
+        description: error instanceof Error ? error.message : "Unknown error occurred"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -38,15 +94,22 @@ const Hero = () => {
                 value={airbnbUrl}
                 onChange={(e) => setAirbnbUrl(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
+                disabled={isLoading}
               />
               <button
                 onClick={handleAnalyze}
-                className="bg-zeniks-purple text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-opacity-90 transition-all flex items-center justify-center gap-2 group"
+                disabled={isLoading}
+                className="bg-zeniks-purple text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-opacity-90 transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                Analyze
-                <Search className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                {isLoading ? "Analyzing..." : "Analyze"}
+                <Search className={`h-5 w-5 ${isLoading ? "" : "group-hover:scale-110 transition-transform"}`} />
               </button>
             </div>
+            {isLoading && (
+              <p className="mt-3 text-zeniks-gray-dark">
+                This may take up to 2 minutes. Please don't close this page...
+              </p>
+            )}
           </div>
         </div>
       </div>
