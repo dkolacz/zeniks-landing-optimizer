@@ -34,7 +34,7 @@ const Analysis = () => {
           .from("listing_raw")
           .select("*")
           .eq("id", numericId)
-          .single();
+          .single(); // Use single() to throw an error if multiple rows are returned
 
         if (error) {
           setError(error.message);
