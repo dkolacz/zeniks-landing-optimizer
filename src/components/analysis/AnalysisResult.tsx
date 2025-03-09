@@ -85,9 +85,14 @@ const AnalysisResult = ({ listingData, listingUrl }: AnalysisResultProps) => {
               <div className="prose max-w-none">
                 <h3 className="text-xl font-semibold text-red-600">Error Processing Data</h3>
                 <p>We received a response from the API but couldn't process it correctly.</p>
+                <p>Error details: {error instanceof Error ? error.message : 'Unknown parsing error'}</p>
                 <div className="bg-gray-50 p-4 rounded-lg overflow-auto max-h-96 mt-4">
-                  <h4 className="font-medium text-lg mb-2">Raw Response</h4>
-                  <pre className="text-xs">{typeof listingData === 'string' ? listingData : 'Non-string data received'}</pre>
+                  <h4 className="font-medium text-lg mb-2">Raw Response Preview</h4>
+                  <pre className="text-xs whitespace-pre-wrap">
+                    {typeof listingData === 'string' 
+                      ? `${listingData.substring(0, 500)}${listingData.length > 500 ? '...' : ''}`
+                      : 'Non-string data received'}
+                  </pre>
                 </div>
               </div>
             </CardContent>

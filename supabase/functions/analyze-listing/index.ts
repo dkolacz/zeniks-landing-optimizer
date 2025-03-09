@@ -121,21 +121,74 @@ serve(async (req) => {
             return;
           }
     
-          // Get the response data as JSON
-          const responseData = await response.json();
+          // First get the response as text to ensure we have valid data
+          const responseText = await response.text();
+          console.log("Apify API raw response length:", responseText.length);
           
-          // Log info about the response
-          console.log("Apify API response data type:", typeof responseData);
-          console.log("Apify API response data keys:", Object.keys(responseData));
-          
-          if (!responseData || (Array.isArray(responseData) && responseData.length === 0)) {
-            console.error("Received empty or invalid response from Apify API");
+          if (!responseText || responseText.trim() === '') {
+            console.error("Received empty response from Apify API");
             
             await supabase
               .from('airbnb_analyses')
               .update({ 
                 status: 'failed',
-                error_message: "Received empty or invalid response from Apify API" 
+                error_message: "Received empty response from Apify API" 
+              })
+              .eq('id', analysisRecord.id);
+              
+            return;
+          }
+          
+          // Try to parse the response as JSON safely
+          let responseData;
+          try {
+            responseData = JSON.parse(responseText);
+            console.log("Successfully parsed JSON response");
+          } catch (parseError) {
+            console.error("Error parsing JSON response:", parseError);
+            console.log("Invalid JSON response first 200 chars:", responseText.substring(0, 200));
+            console.log("Invalid JSON response last 200 chars:", responseText.substring(responseText.length - 200));
+            
+            await supabase
+              .from('airbnb_analyses')
+              .update({ 
+                status: 'failed',
+                error_message: `Invalid JSON response: ${parseError.message}` 
+              })
+              .eq('id', analysisRecord.id);
+              
+            return;
+          }
+          
+          // Log info about the response
+          console.log("Apify API response data type:", typeof responseData);
+          
+          if (responseData === null || responseData === undefined) {
+            console.error("Parsed response is null or undefined");
+            
+            await supabase
+              .from('airbnb_analyses')
+              .update({ 
+                status: 'failed',
+                error_message: "Parsed response is null or undefined" 
+              })
+              .eq('id', analysisRecord.id);
+              
+            return;
+          }
+          
+          if (typeof responseData === 'object') {
+            console.log("Response data keys:", Object.keys(responseData));
+          }
+          
+          if (Array.isArray(responseData) && responseData.length === 0) {
+            console.error("Received empty array from Apify API");
+            
+            await supabase
+              .from('airbnb_analyses')
+              .update({ 
+                status: 'failed',
+                error_message: "Received empty array from Apify API" 
               })
               .eq('id', analysisRecord.id);
               

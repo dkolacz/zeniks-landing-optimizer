@@ -59,13 +59,27 @@ export const useAnalysis = (id: string | undefined) => {
           console.log("Response data type:", typeof data.response_data);
           
           if (typeof data.response_data === 'string') {
-            console.log("Response data length:", data.response_data.length);
-            console.log("Response data first 100 chars:", data.response_data.substring(0, 100));
-            console.log("Response data last 100 chars:", data.response_data.substring(data.response_data.length - 100));
-            
-            // Special check for the specific analysis ID
-            if (id === "fed49745-cbe0-4417-b927-d42d521c979e") {
-              console.log("FULL RESPONSE DATA FOR DEBUGGING:", data.response_data);
+            try {
+              // Perform a validation check by parsing and stringifying
+              const jsonCheck = JSON.parse(data.response_data);
+              console.log("Successfully validated JSON data structure");
+              console.log("Response data length:", data.response_data.length);
+              console.log("Response data first 100 chars:", data.response_data.substring(0, 100));
+              console.log("Response data last 100 chars:", data.response_data.substring(data.response_data.length - 100));
+            } catch (error) {
+              console.error("Invalid JSON in response_data:", error);
+              
+              // Update analysis record to mark as failed due to invalid JSON
+              if (data.status === 'success') {
+                console.log("Updating analysis record to mark as failed due to invalid JSON");
+                await supabase
+                  .from('airbnb_analyses')
+                  .update({ 
+                    status: 'failed',
+                    error_message: `Invalid JSON in response_data: ${error instanceof Error ? error.message : 'Unknown error'}` 
+                  })
+                  .eq('id', id);
+              }
             }
           } else if (typeof data.response_data === 'object') {
             console.log("Response data is an object with keys:", Object.keys(data.response_data));
