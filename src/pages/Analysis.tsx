@@ -34,7 +34,7 @@ const Analysis = () => {
           .from("listing_raw")
           .select("*")
           .eq("id", numericId)
-          .single();
+          .maybeSingle(); // Changed from single() to maybeSingle()
 
         if (error) {
           console.error("Database error:", error);
@@ -43,22 +43,27 @@ const Analysis = () => {
           return;
         }
 
-        if (data) {
-          console.log("Retrieved data:", data);
-          setStatus(data.status);
+        if (!data) {
+          console.log("No record found with ID:", numericId);
+          setError("Analysis record not found. It may have been deleted or not yet created.");
+          setLoading(false);
+          return;
+        }
 
-          if (data.status === "success") {
-            setListingData(data.json);
-            setLoading(false);
-          } else if (data.status === "error") {
-            setError(data.error_message || "An error occurred during analysis");
-            setLoading(false);
-          } else {
-            // If still processing, set a timeout to check again
-            setTimeout(() => {
-              setLoading(true);
-            }, 5000); // Check again after 5 seconds
-          }
+        console.log("Retrieved data:", data);
+        setStatus(data.status);
+
+        if (data.status === "success") {
+          setListingData(data.json);
+          setLoading(false);
+        } else if (data.status === "error") {
+          setError(data.error_message || "An error occurred during analysis");
+          setLoading(false);
+        } else {
+          // If still processing, set a timeout to check again
+          setTimeout(() => {
+            setLoading(true);
+          }, 5000); // Check again after 5 seconds
         }
       } catch (err) {
         console.error("Fetch error:", err);
