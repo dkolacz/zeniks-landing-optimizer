@@ -189,6 +189,9 @@ async function callApifyActor(listingUrl) {
       throw new Error("Missing APIFY_API_KEY environment variable");
     }
     
+    // Verify we have the API key now
+    console.log(`APIFY_API_KEY is ${apifyApiKey ? 'set' : 'not set'}`);
+    
     // Configure Apify actor
     const actorId = 'apify/website-content-crawler'; // Replace with your actual actor ID
     console.log(`Using Apify actor ID: ${actorId}`);
