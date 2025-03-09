@@ -34,15 +34,17 @@ const Analysis = () => {
           .from("listing_raw")
           .select("*")
           .eq("id", numericId)
-          .single(); // Use single() to throw an error if multiple rows are returned
+          .single();
 
         if (error) {
+          console.error("Database error:", error);
           setError(error.message);
           setLoading(false);
           return;
         }
 
         if (data) {
+          console.log("Retrieved data:", data);
           setStatus(data.status);
 
           if (data.status === "success") {
@@ -59,6 +61,7 @@ const Analysis = () => {
           }
         }
       } catch (err) {
+        console.error("Fetch error:", err);
         setError(err instanceof Error ? err.message : "An unexpected error occurred");
         setLoading(false);
       }

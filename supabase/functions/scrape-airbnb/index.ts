@@ -47,8 +47,7 @@ Deno.serve(async (req) => {
         status: 'pending',
         json: { url: listingUrl }
       }])
-      .select('id')
-      .single(); // Use single() instead of maybeSingle() to ensure one row
+      .select('id');
     
     if (recordError) {
       console.error("Error creating initial record:", recordError);
@@ -61,7 +60,7 @@ Deno.serve(async (req) => {
       );
     }
     
-    if (!recordData) {
+    if (!recordData || recordData.length === 0) {
       console.error("No record ID returned after insert");
       return new Response(
         JSON.stringify({ error: "Failed to create database record: No ID returned" }),
@@ -72,7 +71,7 @@ Deno.serve(async (req) => {
       );
     }
     
-    const recordId = recordData.id;
+    const recordId = recordData[0].id;
     console.log(`Created record with ID: ${recordId}`);
     
     // Call Apify synchronously
@@ -100,6 +99,8 @@ Deno.serve(async (req) => {
             }
           );
         }
+
+        console.log(`Successfully updated record ${recordId} with Apify data`);
       } else {
         // Handle empty result
         await updateRecordWithError(supabase, recordId, listingUrl, "No data returned from analysis service");
@@ -114,7 +115,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Analysis completed", 
+        message: "Analysis started", 
         recordId 
       }),
       { 
@@ -166,7 +167,7 @@ async function callApifyActorSync(listingUrl) {
   
   console.log(`Using direct run-sync endpoint for Apify actor`);
   
-  // Use the run-sync endpoint as requested
+  // Use the run-sync endpoint
   const syncEndpoint = `https://api.apify.com/v2/acts/onidivo~airbnb-scraper/run-sync?token=${apifyApiKey}`;
   
   // Prepare the input as specified
