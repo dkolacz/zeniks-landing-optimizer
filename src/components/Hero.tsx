@@ -25,14 +25,18 @@ const Hero = () => {
       setIsAnalyzing(true);
       const toastId = toast.loading("Analyzing your Airbnb listing. This may take a minute...");
 
+      console.log("Invoking scrape-airbnb function with URL:", airbnbUrl);
+      
       const { data, error } = await supabase.functions.invoke("scrape-airbnb", {
         body: { listingUrl: airbnbUrl },
       });
+      
+      console.log("Function response:", { data, error });
 
       if (error) {
-        console.error("Error analyzing listing:", error);
+        console.error("Error invoking function:", error);
         toast.dismiss(toastId);
-        toast.error("Failed to analyze your listing. Please try again.");
+        toast.error(`Failed to analyze your listing: ${error.message}`);
         return;
       }
 
@@ -49,13 +53,15 @@ const Hero = () => {
         // Optional: Scroll to contact section as a next step
         document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
       } else {
+        const errorMsg = data?.error || "Unknown error";
         const statusMessage = data?.status ? `(Status: ${data.status})` : '';
-        toast.error(`Analysis encountered an issue ${statusMessage}`);
+        console.error("Analysis failed:", data);
+        toast.error(`Analysis failed: ${errorMsg} ${statusMessage}`);
       }
     } catch (error) {
       console.error("Unexpected error:", error);
       toast.dismiss();
-      toast.error("Something went wrong. Please try again later.");
+      toast.error(`Something went wrong: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsAnalyzing(false);
     }

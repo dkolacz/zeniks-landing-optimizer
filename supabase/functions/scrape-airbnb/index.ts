@@ -16,14 +16,24 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log("Function invoked with request method:", req.method);
+    
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    
+    console.log("Supabase URL available:", !!supabaseUrl);
+    console.log("Supabase Service Key available:", !!supabaseServiceKey);
+    
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Get the listing URL from the request
-    const { listingUrl } = await req.json()
+    const requestData = await req.json();
+    const { listingUrl } = requestData;
+    
+    console.log("Received listing URL:", listingUrl);
     
     if (!listingUrl) {
+      console.error("No listing URL provided");
       return new Response(
         JSON.stringify({ error: 'Listing URL is required' }),
         { 
@@ -49,9 +59,9 @@ Deno.serve(async (req) => {
       .single()
 
     if (initialError) {
-      console.error(`Error creating initial record: ${initialError.message}`)
+      console.error(`Error creating initial record: ${initialError.message}`, initialError);
       return new Response(
-        JSON.stringify({ error: 'Failed to initialize scraping process' }),
+        JSON.stringify({ error: `Failed to initialize scraping process: ${initialError.message}` }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -60,41 +70,50 @@ Deno.serve(async (req) => {
     }
 
     const recordId = initialRecord.id
+    console.log(`Created initial record with ID: ${recordId}`);
 
     // Call the Apify API to run the actor synchronously
     try {
-      const apifyResponse = await fetch(`https://api.apify.com/v2/acts/${APIFY_ACTOR_ID}/run-sync?token=${APIFY_API_TOKEN}`, {
+      const apifyUrl = `https://api.apify.com/v2/acts/${APIFY_ACTOR_ID}/run-sync?token=${APIFY_API_TOKEN}`;
+      console.log(`Calling Apify API at: ${apifyUrl}`);
+      
+      const requestBody = {
+        addMoreHostInfo: false,
+        calendarMonths: 0,
+        currency: "USD",
+        extraData: true,
+        limitPoints: 100,
+        maxConcurrency: 50,
+        maxItems: 1,
+        maxReviews: 100,
+        proxyConfiguration: {
+          useApifyProxy: true
+        },
+        startUrls: [
+          {
+            url: listingUrl,
+            method: "GET"
+          }
+        ],
+        timeoutMs: 600000
+      };
+      
+      console.log("Apify request body:", JSON.stringify(requestBody));
+      
+      const apifyResponse = await fetch(apifyUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          addMoreHostInfo: false,
-          calendarMonths: 0,
-          currency: "USD",
-          extraData: true,
-          limitPoints: 100,
-          maxConcurrency: 50,
-          maxItems: 1,
-          maxReviews: 100,
-          proxyConfiguration: {
-            useApifyProxy: true
-          },
-          startUrls: [
-            {
-              url: listingUrl,
-              method: "GET"
-            }
-          ],
-          timeoutMs: 600000
-        })
+        body: JSON.stringify(requestBody)
       })
 
       const responseStatus = apifyResponse.status
+      console.log(`Apify API response status: ${responseStatus}`);
       
       if (!apifyResponse.ok) {
         const errorText = await apifyResponse.text()
-        console.error(`Apify API error: ${errorText}`)
+        console.error(`Apify API error (${responseStatus}): ${errorText}`);
         
         // Update the record with failure status
         await supabase
@@ -111,7 +130,12 @@ Deno.serve(async (req) => {
           .eq('id', recordId)
         
         return new Response(
-          JSON.stringify({ error: 'Failed to scrape listing', status: responseStatus }),
+          JSON.stringify({ 
+            error: 'Failed to scrape listing', 
+            status: responseStatus,
+            details: errorText,
+            recordId
+          }),
           { 
             status: 500, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -120,7 +144,36 @@ Deno.serve(async (req) => {
       }
 
       const apifyData = await apifyResponse.json()
-      console.log(`Successfully scraped listing. Data size: ${JSON.stringify(apifyData).length} bytes`)
+      console.log(`Successfully scraped listing. Data type: ${typeof apifyData}, Data size: ${JSON.stringify(apifyData).length} bytes`);
+      
+      if (!apifyData || (Array.isArray(apifyData) && apifyData.length === 0)) {
+        console.error("Apify returned empty data");
+        
+        // Update the record with empty data status
+        await supabase
+          .from('listing_raw')
+          .update({ 
+            json: { 
+              status: 'empty',
+              statusCode: responseStatus,
+              url: listingUrl,
+              updated: new Date().toISOString()
+            }
+          })
+          .eq('id', recordId)
+        
+        return new Response(
+          JSON.stringify({ 
+            error: 'No data found for this listing', 
+            status: responseStatus,
+            recordId
+          }),
+          { 
+            status: 404, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
+      }
 
       // Update the record with the scraped data and success status
       const { error: updateError } = await supabase
@@ -137,9 +190,9 @@ Deno.serve(async (req) => {
         .eq('id', recordId)
 
       if (updateError) {
-        console.error(`Database update error: ${updateError.message}`)
+        console.error(`Database update error: ${updateError.message}`, updateError);
         return new Response(
-          JSON.stringify({ error: 'Failed to store listing data' }),
+          JSON.stringify({ error: `Failed to store listing data: ${updateError.message}`, recordId }),
           { 
             status: 500, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -160,7 +213,7 @@ Deno.serve(async (req) => {
         }
       )
     } catch (apiError) {
-      console.error(`API error: ${apiError.message}`)
+      console.error(`API error: ${apiError.message}`, apiError);
       
       // Update the record with exception error
       await supabase
@@ -176,7 +229,7 @@ Deno.serve(async (req) => {
         .eq('id', recordId)
       
       return new Response(
-        JSON.stringify({ error: 'Error calling Apify API' }),
+        JSON.stringify({ error: `Error calling Apify API: ${apiError.message}`, recordId }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -184,9 +237,9 @@ Deno.serve(async (req) => {
       )
     }
   } catch (error) {
-    console.error(`Unexpected error: ${error.message}`)
+    console.error(`Unexpected error: ${error.message}`, error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: `Internal server error: ${error.message}` }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
