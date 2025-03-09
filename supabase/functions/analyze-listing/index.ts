@@ -91,7 +91,7 @@ serve(async (req) => {
                 method: "GET"
               }
             ],
-            timeoutMs: 600000
+            timeoutMs: 60000  // Updated timeout to 60 seconds (60000ms)
           };
           
           console.log("Apify request body:", JSON.stringify(requestBody));
