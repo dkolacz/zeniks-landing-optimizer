@@ -59,27 +59,42 @@ const Hero = () => {
   const checkRecordDetails = async (id: number) => {
     try {
       console.log(`Checking details for record ID: ${id}`);
-      const { data, error } = await supabase.functions.invoke("check-record", {
+      const response = await supabase.functions.invoke("check-record", {
         body: { recordId: id },
       });
       
-      if (error) {
-        console.error("Error checking record details:", error);
-        return;
+      // Check if the function call itself was successful
+      if (response.error) {
+        console.error("Edge function error:", response.error);
+        setRecordError(`Edge Function error: ${response.error.message || response.error}`);
+        return false;
       }
       
+      // Check the data returned by the function
+      const data = response.data;
       console.log("Record details:", data);
+      
+      if (!data || data.error) {
+        setRecordError(`Check record failed: ${data?.error || 'Unknown error'}`);
+        return false;
+      }
       
       if (data.success && data.data) {
         const jsonData = data.data.json || {};
         console.log("Record JSON structure:", data.recordStructure);
         
         // If we received a success status from Apify but it's not correctly stored
-        if (jsonData && data.recordStructure?.hasStatus) {
+        if (jsonData && data.recordStructure?.json?.hasStatus) {
           console.log("Record status:", jsonData.status);
           if (jsonData.status === 'success') {
             toast.success("Listing analyzed successfully!");
             return true;
+          } else if (jsonData.status === 'processing') {
+            toast.info("Analysis in progress. Please check back in a moment.");
+            return false;
+          } else if (jsonData.status === 'failed' || jsonData.status === 'error') {
+            setRecordError(`Analysis failed: ${jsonData.error || 'Unknown error'}`);
+            return false;
           }
         }
       }
@@ -87,6 +102,7 @@ const Hero = () => {
       return false;
     } catch (err) {
       console.error("Error invoking check-record function:", err);
+      setRecordError(`Error checking record: ${err instanceof Error ? err.message : 'Unknown error'}`);
       return false;
     }
   };
@@ -109,22 +125,28 @@ const Hero = () => {
 
       console.log("Invoking scrape-airbnb function with URL:", airbnbUrl);
       
-      const { data, error } = await supabase.functions.invoke("scrape-airbnb", {
+      const response = await supabase.functions.invoke("scrape-airbnb", {
         body: { listingUrl: airbnbUrl },
       });
       
-      console.log("Function response:", { data, error });
+      console.log("Function response:", response);
 
-      if (error) {
-        console.error("Error invoking function:", error);
+      // Handle function response
+      if (response.error) {
+        console.error("Edge function error:", response.error);
         toast.dismiss(toastId);
-        toast.error(`Failed to analyze your listing: ${error.message}`);
+        toast.error(`Failed to analyze your listing: Edge Function error (${response.status})`);
         return;
       }
 
+      const data = response.data;
+      
       // Store the record ID for future reference
       if (data && data.recordId) {
         setRecordId(data.recordId);
+        
+        // Wait a moment to allow background processing to start
+        await new Promise(resolve => setTimeout(resolve, 3000));
         
         // Check the record status directly to handle edge cases
         const isSuccess = await checkRecordStatus(data.recordId);
@@ -143,7 +165,7 @@ const Hero = () => {
         } else if (recordError) {
           toast.error(recordError);
         } else {
-          toast.info("Analysis completed, but the status is pending. Please check back in a moment.");
+          toast.info("Analysis started, we'll update you when it's complete.");
         }
       } else {
         toast.dismiss(toastId);
@@ -158,17 +180,31 @@ const Hero = () => {
     }
   };
 
-  // Check existing recordId status on component mount
+  // Check existing recordId status on component mount and every 10 seconds
   useEffect(() => {
     if (recordId) {
       const checkStatus = async () => {
         const isSuccess = await checkRecordStatus(recordId);
-        if (!isSuccess) {
-          await checkRecordDetails(recordId);
+        if (!isSuccess && recordError) {
+          toast.error(recordError);
         }
       };
       
+      // Check immediately
       checkStatus();
+      
+      // Then check periodically if the status is not yet success
+      const intervalId = setInterval(async () => {
+        const result = await checkRecordStatus(recordId);
+        if (result) {
+          // If we got a success, stop checking
+          clearInterval(intervalId);
+          toast.success("Listing analysis complete!");
+        }
+      }, 10000); // Check every 10 seconds
+      
+      // Clean up interval
+      return () => clearInterval(intervalId);
     }
   }, [recordId]);
 
