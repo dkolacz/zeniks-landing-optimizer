@@ -1,14 +1,7 @@
-
 project_id = "mubmcqhraztyetyvfvaj"
 
 [functions.create-checkout]
 verify_jwt = false
 
 [functions.update-payment-status]
-verify_jwt = false
-
-[functions.scrape-airbnb]
-verify_jwt = false
-
-[functions.check-record]
 verify_jwt = false
