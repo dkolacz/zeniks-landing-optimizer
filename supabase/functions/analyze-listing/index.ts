@@ -121,35 +121,38 @@ serve(async (req) => {
             return;
           }
     
-          // Get the response as text first for debugging
-          const responseText = await response.text();
-          console.log("Apify API raw response length:", responseText.length);
+          // Get the response data as JSON
+          const responseData = await response.json();
           
-          if (responseText.length > 0) {
-            console.log("Apify API raw response first 100 chars:", responseText.substring(0, 100));
-            console.log("Apify API raw response last 100 chars:", responseText.substring(responseText.length - 100));
-          } else {
-            console.error("Received empty response from Apify API");
+          // Log info about the response
+          console.log("Apify API response data type:", typeof responseData);
+          console.log("Apify API response data keys:", Object.keys(responseData));
+          
+          if (!responseData || (Array.isArray(responseData) && responseData.length === 0)) {
+            console.error("Received empty or invalid response from Apify API");
             
-            // Update the database record with failed status
             await supabase
               .from('airbnb_analyses')
               .update({ 
                 status: 'failed',
-                error_message: "Received empty response from Apify API" 
+                error_message: "Received empty or invalid response from Apify API" 
               })
               .eq('id', analysisRecord.id);
               
             return;
           }
           
-          // Update the database record with successful status and raw response data
+          // Convert response to string if it's an object
+          const responseString = JSON.stringify(responseData);
+          console.log("Response string length:", responseString.length);
+          
+          // Update the database record with successful status and response data
           console.log("Updating analysis record with response data");
           const { error: updateError } = await supabase
             .from('airbnb_analyses')
             .update({ 
               status: 'success',
-              response_data: responseText  // Store the raw text directly
+              response_data: responseString  // Store as string
             })
             .eq('id', analysisRecord.id);
             
