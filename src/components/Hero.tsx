@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
@@ -20,6 +21,7 @@ const Hero = () => {
     
     try {
       // First create a record in the database with status 'pending'
+      console.log("Creating database record for URL:", airbnbUrl);
       const { data: analysisRecord, error: dbError } = await supabase
         .from('airbnb_analyses')
         .insert({
@@ -29,12 +31,18 @@ const Hero = () => {
         .select()
         .single();
         
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error("Database error creating record:", dbError);
+        throw dbError;
+      }
+      
+      console.log("Created analysis record:", analysisRecord);
       
       // Redirect to the analysis page
       navigate(`/analysis/${analysisRecord.id}`);
       
       // Call the Apify API (this will now run in the background after redirect)
+      console.log("Calling Apify API with URL:", airbnbUrl);
       const response = await fetch(
         "https://api.apify.com/v2/acts/onidivo~airbnb-scraper/run-sync?token=apify_api_f9jP7gJSAGmtxpmpSmfEsMUTo9wLtu26VBXn",
         {
@@ -65,24 +73,51 @@ const Hero = () => {
         }
       );
 
+      console.log("Apify API response status:", response.status);
+      console.log("Apify API response headers:", Object.fromEntries([...response.headers.entries()]));
+      
       if (!response.ok) {
+        console.error(`API request failed with status ${response.status}`);
         throw new Error(`API request failed with status ${response.status}`);
       }
 
-      // Get the response data directly
-      const data = await response.json();
-      console.log("Apify API Response:", data);
+      // First get the response as text to inspect it
+      const responseText = await response.text();
+      console.log("Apify API raw response text:", responseText);
       
-      // Update the database record with successful status and response data
+      // Store the raw response text directly without parsing
+      let responseData = responseText;
+      
+      // Only try to parse the JSON if we have a non-empty response
+      if (responseText && responseText.trim()) {
+        try {
+          // Attempt to parse the response as JSON for logging purposes only
+          const parsedData = JSON.parse(responseText);
+          console.log("Successfully parsed response JSON:", parsedData);
+        } catch (parseError) {
+          console.error("Failed to parse response as JSON:", parseError);
+          // We continue with the raw text since we're storing it as-is
+        }
+      } else {
+        console.warn("Received empty response from Apify API");
+      }
+      
+      // Update the database record with successful status and raw response data
+      console.log("Updating analysis record with response");
       const { error: updateError } = await supabase
         .from('airbnb_analyses')
         .update({ 
           status: 'success',
-          response_data: data
+          response_data: responseData  // Store the raw text directly
         })
         .eq('id', analysisRecord.id);
         
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("Error updating database record:", updateError);
+        throw updateError;
+      }
+      
+      console.log("Successfully updated analysis record");
       
     } catch (error) {
       console.error("Error analyzing Airbnb listing:", error);
@@ -99,6 +134,8 @@ const Hero = () => {
           .order('created_at', { ascending: false })
           .limit(1);
       }
+      
+      toast.error("Failed to analyze listing. Please try again.");
     } finally {
       setIsLoading(false);
     }

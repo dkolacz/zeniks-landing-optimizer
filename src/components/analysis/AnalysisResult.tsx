@@ -7,6 +7,55 @@ interface AnalysisResultProps {
 }
 
 const AnalysisResult = ({ listingData, listingUrl }: AnalysisResultProps) => {
+  console.log("AnalysisResult - Rendering with listingData:", listingData);
+  
+  // Handle string data
+  let processedData = listingData;
+  if (typeof listingData === 'string') {
+    console.log("AnalysisResult - listingData is a string, attempting to parse");
+    try {
+      processedData = JSON.parse(listingData);
+      console.log("AnalysisResult - Successfully parsed string data to JSON");
+    } catch (error) {
+      console.error("AnalysisResult - Failed to parse string data:", error);
+      // Show error state if we can't parse the data
+      return (
+        <div className="py-10 px-4">
+          <Card className="max-w-5xl mx-auto">
+            <CardHeader>
+              <CardTitle className="text-2xl">Airbnb Listing Analysis</CardTitle>
+              <CardDescription>
+                Analysis results for: <a href={listingUrl} target="_blank" rel="noopener noreferrer" className="text-zeniks-purple hover:underline">{listingUrl}</a>
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="prose max-w-none">
+                <h3 className="text-xl font-semibold text-red-600">Error Processing Data</h3>
+                <p>We received a response from the API but couldn't process it correctly.</p>
+                <div className="bg-gray-50 p-4 rounded-lg overflow-auto max-h-96 mt-4">
+                  <h4 className="font-medium text-lg mb-2">Raw Response</h4>
+                  <pre className="text-xs">{listingData}</pre>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+  }
+  
+  // If the processed data is an array, get the first item
+  if (Array.isArray(processedData)) {
+    console.log("AnalysisResult - Data is an array with length:", processedData.length);
+    if (processedData.length > 0) {
+      processedData = processedData[0];
+      console.log("AnalysisResult - Using first item from array");
+    } else {
+      console.log("AnalysisResult - Array is empty");
+      processedData = {};
+    }
+  }
+
   return (
     <div className="py-10 px-4">
       <Card className="max-w-5xl mx-auto">
@@ -18,13 +67,13 @@ const AnalysisResult = ({ listingData, listingUrl }: AnalysisResultProps) => {
         </CardHeader>
         <CardContent>
           <div className="prose max-w-none">
-            {listingData.name && (
+            {processedData.name && (
               <div className="mb-6">
-                <h3 className="text-xl font-semibold">{listingData.name}</h3>
-                {listingData.images?.picture_url && (
+                <h3 className="text-xl font-semibold">{processedData.name}</h3>
+                {processedData.images?.picture_url && (
                   <img 
-                    src={listingData.images.picture_url} 
-                    alt={listingData.name} 
+                    src={processedData.images.picture_url} 
+                    alt={processedData.name} 
                     className="w-full h-64 object-cover rounded-lg my-4"
                   />
                 )}
@@ -35,21 +84,21 @@ const AnalysisResult = ({ listingData, listingUrl }: AnalysisResultProps) => {
               <div>
                 <h4 className="font-medium text-lg mb-2">Listing Information</h4>
                 <ul className="space-y-2">
-                  <li><span className="font-medium">Price:</span> {listingData.price?.rate ? `$${listingData.price.rate}` : 'N/A'}</li>
-                  <li><span className="font-medium">Type:</span> {listingData.room_type || 'N/A'}</li>
-                  <li><span className="font-medium">Bedrooms:</span> {listingData.bedrooms || 'N/A'}</li>
-                  <li><span className="font-medium">Bathrooms:</span> {listingData.bathrooms || 'N/A'}</li>
-                  <li><span className="font-medium">Location:</span> {listingData.address?.suburb || listingData.city || 'N/A'}</li>
+                  <li><span className="font-medium">Price:</span> {processedData.price?.rate ? `$${processedData.price.rate}` : 'N/A'}</li>
+                  <li><span className="font-medium">Type:</span> {processedData.room_type || 'N/A'}</li>
+                  <li><span className="font-medium">Bedrooms:</span> {processedData.bedrooms || 'N/A'}</li>
+                  <li><span className="font-medium">Bathrooms:</span> {processedData.bathrooms || 'N/A'}</li>
+                  <li><span className="font-medium">Location:</span> {processedData.address?.suburb || processedData.city || 'N/A'}</li>
                 </ul>
               </div>
               
               <div>
                 <h4 className="font-medium text-lg mb-2">Host &amp; Reviews</h4>
                 <ul className="space-y-2">
-                  <li><span className="font-medium">Host:</span> {listingData.host?.host_name || 'N/A'}</li>
-                  <li><span className="font-medium">Rating:</span> {listingData.rating || 'N/A'}</li>
-                  <li><span className="font-medium">Number of Reviews:</span> {listingData.number_of_reviews || 'N/A'}</li>
-                  <li><span className="font-medium">Review Scores:</span> {listingData.review_scores_rating || 'N/A'}</li>
+                  <li><span className="font-medium">Host:</span> {processedData.host?.host_name || 'N/A'}</li>
+                  <li><span className="font-medium">Rating:</span> {processedData.rating || 'N/A'}</li>
+                  <li><span className="font-medium">Number of Reviews:</span> {processedData.number_of_reviews || 'N/A'}</li>
+                  <li><span className="font-medium">Review Scores:</span> {processedData.review_scores_rating || 'N/A'}</li>
                 </ul>
               </div>
             </div>
@@ -57,7 +106,7 @@ const AnalysisResult = ({ listingData, listingUrl }: AnalysisResultProps) => {
             <div>
               <h4 className="font-medium text-lg mb-2">Raw Response Data</h4>
               <div className="bg-gray-50 p-4 rounded-lg overflow-auto max-h-96">
-                <pre className="text-xs">{JSON.stringify(listingData, null, 2)}</pre>
+                <pre className="text-xs">{JSON.stringify(processedData, null, 2)}</pre>
               </div>
             </div>
           </div>

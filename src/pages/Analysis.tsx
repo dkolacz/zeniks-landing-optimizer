@@ -12,28 +12,35 @@ const Analysis = () => {
   const { id } = useParams();
   const { analysis, loading, progress } = useAnalysis(id);
 
+  console.log("Analysis page rendering with state:", { 
+    id, 
+    loading, 
+    progress, 
+    analysisStatus: analysis?.status,
+    hasResponseData: !!analysis?.response_data
+  });
+
   const renderContent = () => {
     if (loading) {
+      console.log("Rendering loading state");
       return <AnalysisLoading progress={progress} />;
     }
 
     if (analysis?.status === 'failed') {
+      console.log("Rendering error state with message:", analysis.error_message);
       return <AnalysisError errorMessage={analysis.error_message} />;
     }
 
     // Success case
     if (analysis?.status === 'success' && analysis?.response_data) {
-      // Get the listing data
-      let listingData = analysis.response_data;
-      
-      // If it's an array, get the first item
-      if (Array.isArray(listingData)) {
-        listingData = listingData[0];
-      }
-      
-      return <AnalysisResult listingData={listingData} listingUrl={analysis.listing_url} />;
+      console.log("Rendering success state with response_data");
+      return <AnalysisResult 
+        listingData={analysis.response_data} 
+        listingUrl={analysis.listing_url} 
+      />;
     }
 
+    console.log("Rendering empty state (no data available)");
     return <AnalysisEmpty />;
   };
 
