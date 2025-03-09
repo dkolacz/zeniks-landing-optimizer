@@ -9,3 +9,6 @@ verify_jwt = false
 
 [functions.scrape-airbnb]
 verify_jwt = false
+
+[functions.check-record]
+verify_jwt = false

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -9,6 +9,46 @@ const Hero = () => {
   const [airbnbUrl, setAirbnbUrl] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [recordId, setRecordId] = useState<number | null>(null);
+  const [recordError, setRecordError] = useState<string | null>(null);
+
+  // Function to check record status
+  const checkRecordStatus = async (id: number) => {
+    try {
+      const { data, error } = await supabase
+        .from('listing_raw')
+        .select('json')
+        .eq('id', id)
+        .single();
+      
+      if (error) {
+        console.error(`Error fetching record ${id}:`, error);
+        setRecordError(`Database error: ${error.message}`);
+        return false;
+      }
+      
+      if (!data || !data.json) {
+        console.error(`No data found for record ${id}`);
+        setRecordError(`No data found for analysis ID: ${id}`);
+        return false;
+      }
+
+      const status = data.json.status;
+      console.log(`Record ${id} status:`, status, data.json);
+      
+      if (status === 'failed' || status === 'error') {
+        const errorMsg = data.json.error || 'Unknown error';
+        const statusCode = data.json.statusCode || '';
+        setRecordError(`Analysis failed: ${errorMsg} ${statusCode ? `(Status: ${statusCode})` : ''}`);
+        return false;
+      }
+      
+      return status === 'success';
+    } catch (err) {
+      console.error(`Unexpected error checking record ${id}:`, err);
+      setRecordError(`Unexpected error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      return false;
+    }
+  };
 
   const handleAnalyze = async () => {
     if (!airbnbUrl) {
@@ -23,6 +63,7 @@ const Hero = () => {
 
     try {
       setIsAnalyzing(true);
+      setRecordError(null); // Clear any previous error
       const toastId = toast.loading("Analyzing your Airbnb listing. This may take a minute...");
 
       console.log("Invoking scrape-airbnb function with URL:", airbnbUrl);
@@ -43,20 +84,22 @@ const Hero = () => {
       // Store the record ID for future reference
       if (data && data.recordId) {
         setRecordId(data.recordId);
-      }
-
-      toast.dismiss(toastId);
-      
-      if (data && data.success) {
-        toast.success("Listing analyzed successfully!");
         
-        // Optional: Scroll to contact section as a next step
-        document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
+        // Check the record status directly to handle edge cases
+        const isSuccess = await checkRecordStatus(data.recordId);
+        
+        toast.dismiss(toastId);
+        
+        if (isSuccess) {
+          toast.success("Listing analyzed successfully!");
+          // Optional: Scroll to contact section as a next step
+          document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
+        } else if (recordError) {
+          toast.error(recordError);
+        }
       } else {
-        const errorMsg = data?.error || "Unknown error";
-        const statusMessage = data?.status ? `(Status: ${data.status})` : '';
-        console.error("Analysis failed:", data);
-        toast.error(`Analysis failed: ${errorMsg} ${statusMessage}`);
+        toast.dismiss(toastId);
+        toast.error("Failed to get analysis ID. Please try again.");
       }
     } catch (error) {
       console.error("Unexpected error:", error);
@@ -66,6 +109,13 @@ const Hero = () => {
       setIsAnalyzing(false);
     }
   };
+
+  // Check existing recordId status on component mount
+  useEffect(() => {
+    if (recordId) {
+      checkRecordStatus(recordId);
+    }
+  }, [recordId]);
 
   return (
     <div className="relative min-h-screen flex items-center bg-gradient-to-br from-zeniks-gray-light via-white to-zeniks-blue/20">
@@ -105,6 +155,11 @@ const Hero = () => {
             {recordId && (
               <div className="mt-4 text-sm text-zeniks-gray-dark">
                 Analysis ID: {recordId}
+                {recordError && (
+                  <div className="mt-2 p-3 bg-red-50 text-red-700 rounded-md text-left">
+                    <strong>Error:</strong> {recordError}
+                  </div>
+                )}
               </div>
             )}
           </div>
