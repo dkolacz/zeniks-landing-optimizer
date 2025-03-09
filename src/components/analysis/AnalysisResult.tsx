@@ -7,7 +7,31 @@ interface AnalysisResultProps {
 }
 
 const AnalysisResult = ({ listingData, listingUrl }: AnalysisResultProps) => {
-  console.log("AnalysisResult - Rendering with listingData:", listingData);
+  console.log("AnalysisResult - Rendering with raw listingData:", listingData);
+  
+  // Check if the data is empty
+  if (!listingData) {
+    console.error("AnalysisResult - listingData is empty or null");
+    return (
+      <div className="py-10 px-4">
+        <Card className="max-w-5xl mx-auto">
+          <CardHeader>
+            <CardTitle className="text-2xl">Airbnb Listing Analysis</CardTitle>
+            <CardDescription>
+              Analysis results for: <a href={listingUrl} target="_blank" rel="noopener noreferrer" className="text-zeniks-purple hover:underline">{listingUrl}</a>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="prose max-w-none">
+              <h3 className="text-xl font-semibold text-amber-600">No Data Available</h3>
+              <p>We received a successful response from the API but no listing data was found.</p>
+              <p>The API may have encountered an issue while scraping this particular listing. Please try again or try with a different Airbnb listing URL.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
   
   // Handle string data
   let processedData = listingData;
@@ -18,6 +42,7 @@ const AnalysisResult = ({ listingData, listingUrl }: AnalysisResultProps) => {
       console.log("AnalysisResult - Successfully parsed string data to JSON");
     } catch (error) {
       console.error("AnalysisResult - Failed to parse string data:", error);
+      
       // Show error state if we can't parse the data
       return (
         <div className="py-10 px-4">
@@ -34,7 +59,7 @@ const AnalysisResult = ({ listingData, listingUrl }: AnalysisResultProps) => {
                 <p>We received a response from the API but couldn't process it correctly.</p>
                 <div className="bg-gray-50 p-4 rounded-lg overflow-auto max-h-96 mt-4">
                   <h4 className="font-medium text-lg mb-2">Raw Response</h4>
-                  <pre className="text-xs">{listingData}</pre>
+                  <pre className="text-xs">{typeof listingData === 'string' ? listingData : 'Non-string data received'}</pre>
                 </div>
               </div>
             </CardContent>
@@ -56,6 +81,7 @@ const AnalysisResult = ({ listingData, listingUrl }: AnalysisResultProps) => {
     }
   }
 
+  // Main return for valid data
   return (
     <div className="py-10 px-4">
       <Card className="max-w-5xl mx-auto">

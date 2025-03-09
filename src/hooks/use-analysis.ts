@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,32 +51,25 @@ export const useAnalysis = (id: string | undefined) => {
           return;
         }
 
-        console.log("Fetched analysis data:", data);
+        console.log("Fetched analysis data from DB:", data);
+        console.log("Analysis status:", data.status);
         
-        // Process the response_data field
+        // More detailed logging of response_data
         if (data.response_data) {
-          console.log("Raw response_data type:", typeof data.response_data);
+          const responseType = typeof data.response_data;
+          console.log("Response data type:", responseType);
           
-          if (typeof data.response_data === 'string') {
-            console.log("Response data is a string, length:", data.response_data.length);
-            console.log("First 100 chars:", data.response_data.substring(0, 100));
-            
-            // If it's a string, try to parse it if it looks like JSON
-            if (data.response_data.trim().startsWith('{') || data.response_data.trim().startsWith('[')) {
-              try {
-                console.log("Attempting to parse response_data string as JSON");
-                data.response_data = JSON.parse(data.response_data);
-                console.log("Successfully parsed response_data as JSON");
-              } catch (parseError) {
-                console.error("Failed to parse response_data as JSON:", parseError);
-                // Keep as string if parsing fails
-              }
-            }
+          if (responseType === 'string') {
+            console.log("Response data length:", data.response_data.length);
+            console.log("Response data first 100 chars:", data.response_data.substring(0, 100));
+            console.log("Response data last 100 chars:", data.response_data.substring(data.response_data.length - 100));
+          } else if (responseType === 'object') {
+            console.log("Response data is an object with keys:", Object.keys(data.response_data));
           } else {
-            console.log("Response data is already an object");
+            console.log("Response data is neither string nor object");
           }
         } else {
-          console.log("No response_data in the analysis record");
+          console.warn("No response_data in the analysis record!");
         }
         
         setAnalysis(data);

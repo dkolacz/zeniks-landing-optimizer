@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
@@ -81,34 +80,25 @@ const Hero = () => {
         throw new Error(`API request failed with status ${response.status}`);
       }
 
-      // First get the response as text to inspect it
+      // Get the response as text first for debugging
       const responseText = await response.text();
-      console.log("Apify API raw response text:", responseText);
+      console.log("Apify API raw response length:", responseText.length);
+      console.log("Apify API raw response first 100 chars:", responseText.substring(0, 100));
+      console.log("Apify API raw response last 100 chars:", responseText.substring(responseText.length - 100));
       
-      // Store the raw response text directly without parsing
-      let responseData = responseText;
-      
-      // Only try to parse the JSON if we have a non-empty response
-      if (responseText && responseText.trim()) {
-        try {
-          // Attempt to parse the response as JSON for logging purposes only
-          const parsedData = JSON.parse(responseText);
-          console.log("Successfully parsed response JSON:", parsedData);
-        } catch (parseError) {
-          console.error("Failed to parse response as JSON:", parseError);
-          // We continue with the raw text since we're storing it as-is
-        }
-      } else {
-        console.warn("Received empty response from Apify API");
+      // Check if the response is actually empty
+      if (!responseText || responseText.trim() === '') {
+        console.error("Received empty response from Apify API");
+        throw new Error("Received empty response from Apify API");
       }
       
       // Update the database record with successful status and raw response data
-      console.log("Updating analysis record with response");
+      console.log("Updating analysis record with response data");
       const { error: updateError } = await supabase
         .from('airbnb_analyses')
         .update({ 
           status: 'success',
-          response_data: responseData  // Store the raw text directly
+          response_data: responseText  // Store the raw text directly
         })
         .eq('id', analysisRecord.id);
         
@@ -117,7 +107,7 @@ const Hero = () => {
         throw updateError;
       }
       
-      console.log("Successfully updated analysis record");
+      console.log("Successfully updated analysis record with response data");
       
     } catch (error) {
       console.error("Error analyzing Airbnb listing:", error);
