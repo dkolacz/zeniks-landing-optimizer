@@ -48,6 +48,24 @@ export type Database = {
         }
         Relationships: []
       }
+      listing_raw: {
+        Row: {
+          created_at: string
+          id: number
+          json: Json | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          json?: Json | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          json?: Json | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
