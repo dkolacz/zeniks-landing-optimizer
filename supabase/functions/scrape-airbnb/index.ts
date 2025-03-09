@@ -193,7 +193,7 @@ async function callApifyActor(listingUrl) {
     console.log(`APIFY_API_KEY is ${apifyApiKey ? 'set' : 'not set'}`);
     
     // Configure Apify actor
-    const actorId = 'dtrungtin/airbnb-scraper'; // Changed to the correct Airbnb scraper actor
+    const actorId = 'onidivo/airbnb-scraper'; // Updated to the correct Airbnb scraper actor
     console.log(`Using Apify actor ID: ${actorId}`);
     
     // Prepare the input for the Apify actor with the correct format
