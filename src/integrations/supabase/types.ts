@@ -9,36 +9,42 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      airbnb_analyses: {
+      listing_analysis_requests: {
         Row: {
           created_at: string
-          error_message: string | null
+          email: string
+          full_name: string
           id: string
           listing_url: string
-          raw_response: string | null
-          response_data: Json | null
+          payment_status: string
+          platform: string
           status: string
-          updated_at: string
+          stripe_payment_id: string | null
+          stripe_session_id: string | null
         }
         Insert: {
           created_at?: string
-          error_message?: string | null
+          email: string
+          full_name: string
           id?: string
           listing_url: string
-          raw_response?: string | null
-          response_data?: Json | null
+          payment_status?: string
+          platform: string
           status?: string
-          updated_at?: string
+          stripe_payment_id?: string | null
+          stripe_session_id?: string | null
         }
         Update: {
           created_at?: string
-          error_message?: string | null
+          email?: string
+          full_name?: string
           id?: string
           listing_url?: string
-          raw_response?: string | null
-          response_data?: Json | null
+          payment_status?: string
+          platform?: string
           status?: string
-          updated_at?: string
+          stripe_payment_id?: string | null
+          stripe_session_id?: string | null
         }
         Relationships: []
       }

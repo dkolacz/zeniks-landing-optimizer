@@ -1,51 +1,17 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Search } from "lucide-react";
+import { ArrowRight, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 
 const Hero = () => {
   const [airbnbUrl, setAirbnbUrl] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
 
-  const handleAnalyze = async () => {
-    if (!airbnbUrl) {
-      toast.error("Please enter an Airbnb listing URL");
-      return;
-    }
-    
-    setIsLoading(true);
-    
-    try {
-      console.log("Calling edge function to analyze URL:", airbnbUrl);
-      
-      // Call the edge function instead of handling the API call directly
-      const { data, error } = await supabase.functions.invoke('analyze-listing', {
-        body: { airbnbUrl }
-      });
-      
-      if (error) {
-        console.error("Edge function error:", error);
-        throw new Error(error.message || "Failed to analyze listing");
-      }
-      
-      console.log("Edge function response:", data);
-      
-      if (!data || !data.id) {
-        throw new Error("Invalid response from server");
-      }
-      
-      // Redirect to the analysis page
-      navigate(`/analysis/${data.id}`);
-      
-    } catch (error) {
-      console.error("Error analyzing Airbnb listing:", error);
-      toast.error("Failed to analyze listing. Please try again.");
-    } finally {
-      setIsLoading(false);
+  const handleAnalyze = () => {
+    if (airbnbUrl) {
+      // When we have a proper implementation, we would handle the URL here
+      console.log("Analyzing URL:", airbnbUrl);
+      // For now, just scroll to contact section
+      document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
     }
   };
 
@@ -72,22 +38,15 @@ const Hero = () => {
                 value={airbnbUrl}
                 onChange={(e) => setAirbnbUrl(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
-                disabled={isLoading}
               />
               <button
                 onClick={handleAnalyze}
-                disabled={isLoading}
-                className="bg-zeniks-purple text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-opacity-90 transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
+                className="bg-zeniks-purple text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-opacity-90 transition-all flex items-center justify-center gap-2 group"
               >
-                {isLoading ? "Analyzing..." : "Analyze"}
-                <Search className={`h-5 w-5 ${isLoading ? "" : "group-hover:scale-110 transition-transform"}`} />
+                Analyze
+                <Search className="h-5 w-5 group-hover:scale-110 transition-transform" />
               </button>
             </div>
-            {isLoading && (
-              <p className="mt-3 text-zeniks-gray-dark">
-                This may take up to 2 minutes. Please don't close this page...
-              </p>
-            )}
           </div>
         </div>
       </div>
