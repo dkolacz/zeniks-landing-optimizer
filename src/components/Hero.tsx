@@ -6,12 +6,25 @@ import { Input } from "@/components/ui/input";
 const Hero = () => {
   const [airbnbUrl, setAirbnbUrl] = useState("");
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
     if (airbnbUrl) {
-      // When we have a proper implementation, we would handle the URL here
-      console.log("Analyzing URL:", airbnbUrl);
-      // For now, just scroll to contact section
-      document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
+      try {
+        const response = await fetch('https://zeniks.app.n8n.cloud/webhook-test/6c2e1660-debd-490b-ac21-7167d1f0573e', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ url: airbnbUrl }),
+        });
+
+        if (!response.ok) {
+          console.error('Error calling webhook:', response.statusText);
+        }
+
+        console.log('Webhook called successfully');
+      } catch (error) {
+        console.error('Error calling webhook:', error);
+      }
     }
   };
 
