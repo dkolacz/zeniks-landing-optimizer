@@ -1,4 +1,3 @@
-
 const HowItWorks = () => {
   const steps = [
     {
@@ -34,7 +33,7 @@ const HowItWorks = () => {
               className="bg-white p-8 rounded-lg shadow-lg hover:shadow-xl transition-shadow"
             >
               <div className="flex justify-center mb-6">
-                <div className="w-16 h-16 bg-zeniks-teal rounded-full flex items-center justify-center text-2xl">
+                <div className="w-16 h-16 bg-zeniks-orange rounded-full flex items-center justify-center text-2xl">
                   {step.emoji}
                 </div>
               </div>

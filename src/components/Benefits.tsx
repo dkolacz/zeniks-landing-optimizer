@@ -1,4 +1,3 @@
-
 const Benefits = () => {
   const benefits = [
     {
@@ -39,7 +38,7 @@ const Benefits = () => {
               key={index}
               className="p-6 rounded-lg bg-zeniks-gray-light hover:shadow-lg transition-shadow"
             >
-              <div className="w-12 h-12 bg-zeniks-teal rounded-full flex items-center justify-center mb-4 mx-auto text-xl">
+              <div className="w-12 h-12 bg-zeniks-orange rounded-full flex items-center justify-center mb-4 mx-auto text-xl">
                 {benefit.emoji}
               </div>
               <h3 className="text-xl font-semibold text-zeniks-purple mb-3 text-center">

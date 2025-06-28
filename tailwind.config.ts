@@ -21,8 +21,9 @@ export default {
       colors: {
         zeniks: {
           purple: "#663399",
+          orange: "#FF6B35", // New complementary color to purple
           blue: "#ADD8E6",
-          teal: "#4ECDC4", // New complementary color
+          teal: "#4ECDC4",
           gray: {
             light: "#F8F8F8",
             blue: "#E6EBF2",
