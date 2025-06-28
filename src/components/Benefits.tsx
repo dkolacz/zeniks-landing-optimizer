@@ -1,27 +1,26 @@
-import { Search, MessageSquareHeart, Lightbulb, ThumbsUp } from "lucide-react";
 
 const Benefits = () => {
   const benefits = [
     {
-      icon: Search,
+      emoji: "🔍",
       title: "Enhance Listing Visibility",
       description:
         "Improve your listing's discoverability so more potential guests can find your property.",
     },
     {
-      icon: MessageSquareHeart,
+      emoji: "💝",
       title: "Craft a More Compelling Listing",
       description:
         "Optimize your listing's content and photos to create a stronger appeal for travelers.",
     },
     {
-      icon: Lightbulb,
+      emoji: "💡",
       title: "Gain Expert Insights",
       description:
         "Benefit from an in-depth analysis that reveals your listing's strengths and areas for improvement.",
     },
     {
-      icon: ThumbsUp,
+      emoji: "👍",
       title: "Guest-Centric Approach",
       description:
         "Understand what guests are looking for and tailor your listing to meet their needs and expectations.",
@@ -40,8 +39,8 @@ const Benefits = () => {
               key={index}
               className="p-6 rounded-lg bg-zeniks-gray-light hover:shadow-lg transition-shadow"
             >
-              <div className="w-12 h-12 bg-zeniks-purple rounded-full flex items-center justify-center mb-4 mx-auto">
-                <benefit.icon className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 bg-zeniks-purple rounded-full flex items-center justify-center mb-4 mx-auto text-xl">
+                {benefit.emoji}
               </div>
               <h3 className="text-xl font-semibold text-zeniks-purple mb-3 text-center">
                 {benefit.title}

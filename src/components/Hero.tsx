@@ -1,6 +1,5 @@
 
 import { useState } from "react";
-import { ArrowRight, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 const Hero = () => {
@@ -57,7 +56,7 @@ const Hero = () => {
                 className="bg-zeniks-purple text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-opacity-90 transition-all flex items-center justify-center gap-2 group"
               >
                 Analyze
-                <Search className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                <span className="text-xl group-hover:scale-110 transition-transform">🔍</span>
               </button>
             </div>
           </div>

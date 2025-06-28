@@ -1,21 +1,20 @@
-import { Link, Brain, FileCheck } from "lucide-react";
 
 const HowItWorks = () => {
   const steps = [
     {
-      icon: Link,
+      emoji: "🔗",
       title: "Submit Your Listing URL",
       description:
         "Paste the link to your rental listing on Airbnb, VRBO, Booking.com, or your own website.",
     },
     {
-      icon: Brain,
+      emoji: "🧠",
       title: "AI-Powered Analysis",
       description:
         "Zeniks AI model analyzes your listing content, photos, reviews, location and other key factors.",
     },
     {
-      icon: FileCheck,
+      emoji: "📋",
       title: "Get Your Actionable Report",
       description:
         "Receive a detailed, easy-to-understand report with specific recommendations to enhance your listing performance.",
@@ -35,8 +34,8 @@ const HowItWorks = () => {
               className="bg-white p-8 rounded-lg shadow-lg hover:shadow-xl transition-shadow"
             >
               <div className="flex justify-center mb-6">
-                <div className="w-16 h-16 bg-zeniks-purple rounded-full flex items-center justify-center">
-                  <step.icon className="w-8 h-8 text-white" />
+                <div className="w-16 h-16 bg-zeniks-purple rounded-full flex items-center justify-center text-2xl">
+                  {step.emoji}
                 </div>
               </div>
               <h3 className="text-xl font-semibold text-zeniks-purple mb-4 text-center">
