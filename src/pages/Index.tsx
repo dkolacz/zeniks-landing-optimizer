@@ -1,8 +1,11 @@
-
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
+import HowItWorks from "@/components/HowItWorks";
+import Benefits from "@/components/Benefits";
+import Pricing from "@/components/Pricing";
+import Testimonials from "@/components/Testimonials";
 import FAQ from "@/components/FAQ";
 import Footer from "@/components/Footer";
 
@@ -25,9 +28,13 @@ const Index = () => {
   }, [location]);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-zeniks-gray-light">
       <Navbar />
       <Hero />
+      <HowItWorks />
+      <Benefits />
+      <Pricing />
+      <Testimonials />
       <FAQ />
       <Footer />
     </div>
