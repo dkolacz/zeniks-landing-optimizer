@@ -39,8 +39,10 @@ const Benefits = () => {
               key={index}
               className="p-6 rounded-lg bg-zeniks-gray-light hover:shadow-lg transition-shadow"
             >
-              <div className="w-12 h-12 bg-zeniks-purple rounded-full flex items-center justify-center mb-4 mx-auto text-xl">
-                {benefit.emoji}
+              <div className="flex justify-center mb-4">
+                <div className="text-3xl">
+                  {benefit.emoji}
+                </div>
               </div>
               <h3 className="text-xl font-semibold text-zeniks-purple mb-3 text-center">
                 {benefit.title}
