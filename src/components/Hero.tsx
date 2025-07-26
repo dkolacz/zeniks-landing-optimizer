@@ -229,51 +229,48 @@ const Hero = () => {
                     </>
                   )}
                 </button>
+                 
+                 {/* Progress indicator moved below CTA */}
+                 <div className="mt-4 text-center">
+                   <p className="text-sm text-zeniks-gray-dark">
+                     ✅ {reportCount} / 100 free AI reports claimed
+                   </p>
+                 </div>
                 
-                {/* Sample Report Preview */}
-                <div className="mt-6 flex flex-col items-center gap-3">
-                  <p className="text-sm text-zeniks-gray-dark">
-                    Want to see what you'll get?
-                  </p>
-                  <Dialog open={showSampleModal} onOpenChange={setShowSampleModal}>
-                    <DialogTrigger asChild>
-                      <div className="cursor-pointer group">
-                        <img 
-                          src={sampleReport} 
-                          alt="Sample Zeniks AI report preview" 
-                          className="w-32 h-20 object-cover rounded-lg border-2 border-zeniks-gray-light shadow-md hover:shadow-xl transform hover:scale-105 transition-all duration-300 group-hover:border-zeniks-purple/50"
-                        />
-                        <p className="text-xs text-zeniks-purple mt-2 group-hover:text-zeniks-purple/80 transition-colors">
-                          Click to view sample report
-                        </p>
-                      </div>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
-                      <DialogHeader>
-                        <DialogTitle className="text-zeniks-purple text-xl font-bold">
-                          Sample Zeniks AI Report
-                        </DialogTitle>
-                      </DialogHeader>
-                      <div className="mt-4">
-                        <img 
-                          src={sampleReport} 
-                          alt="Sample Zeniks AI listing analysis report" 
-                          className="w-full h-auto rounded-lg shadow-lg"
-                        />
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-                
-                {/* Report Counter */}
-                <div className="mt-4 text-center">
-                  <p className="text-sm text-zeniks-gray-dark">
-                    ✅ {reportCount} / 100 free AI reports claimed
-                  </p>
-                  <p className="text-xs text-zeniks-gray-dark/80 mt-1">
-                    Zeniks is in Beta and open to early hosts.
-                  </p>
-                </div>
+                 {/* Sample Report Preview */}
+                 <div className="mt-6 flex flex-col items-center gap-3">
+                   <p className="text-sm text-zeniks-gray-dark">
+                     Want to see what you'll get?
+                   </p>
+                   <Dialog open={showSampleModal} onOpenChange={setShowSampleModal}>
+                     <DialogTrigger asChild>
+                       <div className="cursor-pointer group">
+                         <img 
+                           src={sampleReport} 
+                           alt="Sample Zeniks AI report preview" 
+                           className="w-32 h-20 object-cover rounded-lg border-2 border-zeniks-gray-light shadow-md hover:shadow-xl transform hover:scale-105 transition-all duration-300 group-hover:border-zeniks-purple/50"
+                         />
+                         <p className="text-xs text-zeniks-purple mt-2 group-hover:text-zeniks-purple/80 transition-colors">
+                           Click to view sample report
+                         </p>
+                       </div>
+                     </DialogTrigger>
+                     <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+                       <DialogHeader>
+                         <DialogTitle className="text-zeniks-purple text-xl font-bold">
+                           Sample Zeniks AI Report
+                         </DialogTitle>
+                       </DialogHeader>
+                       <div className="mt-4">
+                         <img 
+                           src={sampleReport} 
+                           alt="Sample Zeniks AI listing analysis report" 
+                           className="w-full h-auto rounded-lg shadow-lg"
+                         />
+                       </div>
+                     </DialogContent>
+                   </Dialog>
+                 </div>
               </div>
             </div>
           </div>
