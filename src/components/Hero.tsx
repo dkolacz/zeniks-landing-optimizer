@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -19,7 +19,28 @@ const Hero = () => {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [urlError, setUrlError] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [reportCount, setReportCount] = useState(27); // Start with 27 as baseline
   const { toast } = useToast();
+
+  // Fetch current report count on component mount
+  useEffect(() => {
+    const fetchReportCount = async () => {
+      try {
+        const { count, error } = await supabase
+          .from('report_requests')
+          .select('*', { count: 'exact', head: true });
+        
+        if (!error && count !== null) {
+          // Use the database count, but ensure it's at least 27 for urgency
+          setReportCount(Math.max(count, 27));
+        }
+      } catch (error) {
+        console.error('Error fetching report count:', error);
+      }
+    };
+
+    fetchReportCount();
+  }, []);
 
   // Validation functions
   const validateUrl = (url: string) => {
@@ -119,6 +140,9 @@ const Hero = () => {
       console.log('Data saved successfully:', data);
 
       console.log('About to show success dialog...');
+      // Increment report counter
+      setReportCount(prev => prev + 1);
+      
       // Show success dialog
       setShowSuccessDialog(true);
       console.log('Success dialog opened');
@@ -192,6 +216,16 @@ const Hero = () => {
                 >
                   {isLoading ? "Processing..." : "Get My Free Report →"}
                 </button>
+                
+                {/* Report Counter */}
+                <div className="mt-4 text-center">
+                  <p className="text-sm text-zeniks-gray-dark">
+                    ✅ {reportCount} / 100 free AI reports claimed
+                  </p>
+                  <p className="text-xs text-zeniks-gray-dark/80 mt-1">
+                    Zeniks is in Beta and open to early hosts.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
