@@ -1,15 +1,41 @@
 
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Hero = () => {
   const [airbnbUrl, setAirbnbUrl] = useState("");
   const [email, setEmail] = useState("");
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   const handleAnalyze = async () => {
     if (airbnbUrl && email) {
+      setIsLoading(true);
       try {
+        // Store data in Supabase
+        const { data, error } = await supabase
+          .from('report_requests')
+          .insert([
+            {
+              airbnb_url: airbnbUrl,
+              email: email
+            }
+          ])
+          .select();
+
+        if (error) {
+          console.error('Error storing data:', error);
+          toast({
+            title: "Error",
+            description: "Something went wrong. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Call the webhook
         const response = await fetch('https://zeniks.app.n8n.cloud/webhook-test/6c2e1660-debd-490b-ac21-7167d1f0573e', {
           method: 'POST',
           headers: {
@@ -22,10 +48,25 @@ const Hero = () => {
           console.error('Error calling webhook:', response.statusText);
         }
 
-        console.log('Webhook called successfully');
-        setShowSuccess(true);
+        // Show success toast
+        toast({
+          title: "🎉 Thanks!",
+          description: "Your Airbnb listing is being analyzed. You'll get your personalized AI report by email within 24 hours.",
+        });
+
+        // Reset form
+        setAirbnbUrl("");
+        setEmail("");
+        
       } catch (error) {
-        console.error('Error calling webhook:', error);
+        console.error('Error:', error);
+        toast({
+          title: "Error",
+          description: "Something went wrong. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -42,40 +83,32 @@ const Hero = () => {
             Get a free, personalized AI-powered audit to increase bookings and improve your listing's visibility. Just paste your URL.
           </p>
           
-          {showSuccess ? (
-            <div className="max-w-2xl mx-auto bg-green-50 border border-green-200 rounded-lg p-6">
-              <p className="text-lg text-green-800">
-                🎉 Thanks! Your Airbnb listing is being analyzed. You'll get your personalized AI report by email within 24 hours.
-              </p>
+          <div className="max-w-2xl mx-auto">
+            <div className="flex flex-col gap-4">
+              <Input
+                type="url"
+                placeholder="Your Airbnb Listing URL"
+                className="w-full py-6 text-base"
+                value={airbnbUrl}
+                onChange={(e) => setAirbnbUrl(e.target.value)}
+              />
+              <Input
+                type="email"
+                placeholder="Your Email Address"
+                className="w-full py-6 text-base"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
+              />
+              <button
+                onClick={handleAnalyze}
+                disabled={!airbnbUrl || !email || isLoading}
+                className="bg-zeniks-purple text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-opacity-90 transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? "Processing..." : "Get My Free Report →"}
+              </button>
             </div>
-          ) : (
-            <div className="max-w-2xl mx-auto">
-              <div className="flex flex-col gap-4">
-                <Input
-                  type="url"
-                  placeholder="Your Airbnb Listing URL"
-                  className="w-full py-6 text-base"
-                  value={airbnbUrl}
-                  onChange={(e) => setAirbnbUrl(e.target.value)}
-                />
-                <Input
-                  type="email"
-                  placeholder="Your Email Address"
-                  className="w-full py-6 text-base"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
-                />
-                <button
-                  onClick={handleAnalyze}
-                  disabled={!airbnbUrl || !email}
-                  className="bg-zeniks-purple text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-opacity-90 transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Get My Free Report →
-                </button>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
