@@ -172,111 +172,107 @@ const Hero = () => {
 
   return (
     <>
-      <div className="relative min-h-[80vh] md:min-h-[85vh] flex items-center bg-gradient-to-br from-zeniks-gray-light via-white to-zeniks-blue/20 overflow-hidden py-8 md:py-12">
+      <div className="relative min-h-screen flex items-center bg-gradient-to-br from-zeniks-gray-light via-white to-zeniks-blue/20 overflow-hidden">
         <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
         {/* Abstract pattern overlay */}
         <div className="absolute inset-0 opacity-30">
           <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-br from-zeniks-purple/20 to-transparent rounded-full blur-3xl"></div>
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-tl from-zeniks-blue/20 to-transparent rounded-full blur-3xl"></div>
         </div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 md:pt-16">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
           <div className="text-center">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-zeniks-purple mb-4 md:mb-6">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-zeniks-purple mb-6">
               Supercharge Your Airbnb Listing with AI
             </h1>
-            <p className="text-lg sm:text-xl md:text-2xl text-zeniks-gray-dark max-w-3xl mx-auto mb-6 md:mb-8">
+            <p className="text-xl md:text-2xl text-zeniks-gray-dark max-w-3xl mx-auto mb-8">
               Get a free, personalized AI-powered audit to increase bookings and improve your listing's visibility. Just paste your URL.
             </p>
             
-            <div className="max-w-2xl mx-auto relative">
-              {/* Soft radial gradient behind form */}
-              <div className="absolute inset-0 bg-gradient-radial from-purple-100/30 via-transparent to-transparent rounded-3xl blur-xl transform scale-110"></div>
-              <div className="relative z-10">
-                <div className="flex flex-col gap-4">
-                  <div>
-                    <Input
-                      type="url"
-                      placeholder="Your Airbnb Listing URL"
-                      className={`w-full py-6 text-base ${urlError ? 'border-red-500 focus:border-red-500' : ''}`}
-                      value={airbnbUrl}
-                      onChange={(e) => handleUrlChange(e.target.value)}
-                      onBlur={handleUrlBlur}
-                    />
-                    {urlError && (
-                      <p className="text-red-500 text-sm mt-2 text-left">{urlError}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Input
-                      type="email"
-                      placeholder="Your Email Address"
-                      className={`w-full py-6 text-base ${emailError ? 'border-red-500 focus:border-red-500' : ''}`}
-                      value={email}
-                      onChange={(e) => handleEmailChange(e.target.value)}
-                      onBlur={handleEmailBlur}
-                      onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
-                    />
-                    {emailError && (
-                      <p className="text-red-500 text-sm mt-2 text-left">{emailError}</p>
-                    )}
-                  </div>
-                  <button
-                    onClick={handleAnalyze}
-                    disabled={!airbnbUrl || !email || isLoading || !!urlError || !!emailError}
-                    className="bg-zeniks-purple text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-zeniks-purple/90 hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isLoading ? "Processing..." : (
-                      <>
-                        Get My Free Report 
-                        <span className="group-hover:translate-x-1 transition-transform duration-300">→</span>
-                      </>
-                    )}
-                  </button>
-                  
-                  {/* Sample Report Preview - grouped closer to CTA */}
-                  <div className="mt-2 flex flex-col items-center gap-1">
-                    <p className="text-[10px] sm:text-xs text-zeniks-gray-dark/80">
-                      Want to see what you'll get?
-                    </p>
-                    <Dialog open={showSampleModal} onOpenChange={setShowSampleModal}>
-                      <DialogTrigger asChild>
-                        <div className="cursor-pointer group">
-                          <img 
-                            src={sampleReport} 
-                            alt="Sample Zeniks AI report preview" 
-                            className="w-20 h-12 sm:w-22 sm:h-14 object-cover rounded-md border border-zeniks-gray-light/40 shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-300 group-hover:border-zeniks-purple/30 opacity-75 hover:opacity-95"
-                          />
-                          <p className="text-[10px] sm:text-xs text-zeniks-purple/60 mt-0.5 group-hover:text-zeniks-purple transition-colors">
-                            Sample report
-                          </p>
-                        </div>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
-                        <DialogHeader>
-                          <DialogTitle className="text-zeniks-purple text-xl font-bold">
-                            Sample Zeniks AI Report
-                          </DialogTitle>
-                        </DialogHeader>
-                        <div className="mt-4">
-                          <img 
-                            src={sampleReport} 
-                            alt="Sample Zeniks AI listing analysis report" 
-                            className="w-full h-auto rounded-lg shadow-lg"
-                          />
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                    
-                  {/* Report Counter - more compact and subtle */}
-                  <div className="mt-3 text-center">
-                    <p className="text-[10px] sm:text-xs text-zeniks-gray-dark/70">
-                      ✅ {reportCount} / 100 free AI reports claimed
-                    </p>
-                    <p className="text-[9px] sm:text-[10px] text-zeniks-gray-dark/50 mt-0.5">
-                      Zeniks is in Beta and open to early hosts.
-                    </p>
-                  </div>
+            <div className="max-w-2xl mx-auto">
+              <div className="flex flex-col gap-4">
+                <div>
+                  <Input
+                    type="url"
+                    placeholder="Your Airbnb Listing URL"
+                    className={`w-full py-6 text-base ${urlError ? 'border-red-500 focus:border-red-500' : ''}`}
+                    value={airbnbUrl}
+                    onChange={(e) => handleUrlChange(e.target.value)}
+                    onBlur={handleUrlBlur}
+                  />
+                  {urlError && (
+                    <p className="text-red-500 text-sm mt-2 text-left">{urlError}</p>
+                  )}
+                </div>
+                <div>
+                  <Input
+                    type="email"
+                    placeholder="Your Email Address"
+                    className={`w-full py-6 text-base ${emailError ? 'border-red-500 focus:border-red-500' : ''}`}
+                    value={email}
+                    onChange={(e) => handleEmailChange(e.target.value)}
+                    onBlur={handleEmailBlur}
+                    onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
+                  />
+                  {emailError && (
+                    <p className="text-red-500 text-sm mt-2 text-left">{emailError}</p>
+                  )}
+                </div>
+                <button
+                  onClick={handleAnalyze}
+                  disabled={!airbnbUrl || !email || isLoading || !!urlError || !!emailError}
+                  className="bg-zeniks-purple text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-zeniks-purple/90 hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? "Processing..." : (
+                    <>
+                      Get My Free Report 
+                      <span className="group-hover:translate-x-1 transition-transform duration-300">→</span>
+                    </>
+                  )}
+                </button>
+                
+                {/* Sample Report Preview */}
+                <div className="mt-6 flex flex-col items-center gap-3">
+                  <p className="text-sm text-zeniks-gray-dark">
+                    Want to see what you'll get?
+                  </p>
+                  <Dialog open={showSampleModal} onOpenChange={setShowSampleModal}>
+                    <DialogTrigger asChild>
+                      <div className="cursor-pointer group">
+                        <img 
+                          src={sampleReport} 
+                          alt="Sample Zeniks AI report preview" 
+                          className="w-32 h-20 object-cover rounded-lg border-2 border-zeniks-gray-light shadow-md hover:shadow-xl transform hover:scale-105 transition-all duration-300 group-hover:border-zeniks-purple/50"
+                        />
+                        <p className="text-xs text-zeniks-purple mt-2 group-hover:text-zeniks-purple/80 transition-colors">
+                          Click to view sample report
+                        </p>
+                      </div>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+                      <DialogHeader>
+                        <DialogTitle className="text-zeniks-purple text-xl font-bold">
+                          Sample Zeniks AI Report
+                        </DialogTitle>
+                      </DialogHeader>
+                      <div className="mt-4">
+                        <img 
+                          src={sampleReport} 
+                          alt="Sample Zeniks AI listing analysis report" 
+                          className="w-full h-auto rounded-lg shadow-lg"
+                        />
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                
+                {/* Report Counter */}
+                <div className="mt-4 text-center">
+                  <p className="text-sm text-zeniks-gray-dark">
+                    ✅ {reportCount} / 100 free AI reports claimed
+                  </p>
+                  <p className="text-xs text-zeniks-gray-dark/80 mt-1">
+                    Zeniks is in Beta and open to early hosts.
+                  </p>
                 </div>
               </div>
             </div>
