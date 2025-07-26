@@ -238,21 +238,25 @@ const Hero = () => {
                  </div>
                 
                  {/* Sample Report Preview */}
-                 <div className="mt-6 flex flex-col items-center gap-3">
-                   <p className="text-sm text-zeniks-gray-dark">
-                     Want to see what you'll get?
-                   </p>
+                 <div className="mt-6 flex flex-col items-center">
                    <Dialog open={showSampleModal} onOpenChange={setShowSampleModal}>
                      <DialogTrigger asChild>
                        <div className="cursor-pointer group">
-                         <img 
-                           src={sampleReport} 
-                           alt="Sample Zeniks AI report preview" 
-                           className="w-32 h-20 object-cover rounded-lg border-2 border-zeniks-gray-light shadow-md hover:shadow-xl transform hover:scale-105 transition-all duration-300 group-hover:border-zeniks-purple/50"
-                         />
-                         <p className="text-xs text-zeniks-purple mt-2 group-hover:text-zeniks-purple/80 transition-colors">
-                           Click to view sample report
-                         </p>
+                         <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 border border-white/40">
+                           <div className="text-center mb-3">
+                             <p className="text-sm font-medium text-zeniks-purple group-hover:text-zeniks-purple/80 transition-colors">
+                               Preview a Real Report
+                             </p>
+                           </div>
+                           <img 
+                             src={sampleReport} 
+                             alt="Sample Zeniks AI report preview" 
+                             className="w-24 h-16 object-cover rounded-lg border border-zeniks-gray-light shadow-sm mx-auto transform group-hover:scale-105 transition-all duration-300"
+                           />
+                           <p className="text-xs text-zeniks-gray-dark mt-2 text-center opacity-80 group-hover:opacity-100 transition-opacity">
+                             Click to view full sample
+                           </p>
+                         </div>
                        </div>
                      </DialogTrigger>
                      <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
