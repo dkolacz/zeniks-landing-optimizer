@@ -14,7 +14,10 @@ const Hero = () => {
     if (airbnbUrl && email) {
       setIsLoading(true);
       try {
+        console.log('Starting form submission...', { airbnbUrl, email });
+        
         // Store data in Supabase
+        console.log('Attempting to insert into Supabase...');
         const { data, error } = await supabase
           .from('report_requests')
           .insert([
@@ -25,11 +28,13 @@ const Hero = () => {
           ])
           .select();
 
+        console.log('Supabase response:', { data, error });
+
         if (error) {
-          console.error('Error storing data:', error);
+          console.error('Supabase error details:', error);
           toast({
             title: "Error",
-            description: "Something went wrong. Please try again.",
+            description: `Database error: ${error.message}`,
             variant: "destructive",
           });
           return;
