@@ -18,18 +18,17 @@ const Footer = () => {
                 className="h-8 w-auto"
               />
             </div>
-            <p className="text-zeniks-gray-dark">
-              Empowering hosts to maximize their rental potential through AI-driven
-              insights.
+            <p className="text-zeniks-gray-dark text-sm leading-relaxed">
+              Zeniks helps Airbnb hosts grow bookings with smarter, AI-powered listing insights. Currently in Beta — join now and get your first audit free.
             </p>
           </div>
           <div>
-            <h4 className="font-semibold text-zeniks-purple mb-4">Quick Links</h4>
+            <h4 className="font-semibold text-zeniks-purple mb-4 text-sm">Quick Links</h4>
             <ul className="space-y-2">
               <li>
                 <a
                   href="#how-it-works"
-                  className="text-zeniks-gray-dark hover:text-zeniks-purple transition-colors"
+                  className="text-zeniks-gray-dark hover:text-zeniks-purple transition-colors text-sm"
                 >
                   How It Works
                 </a>
@@ -37,7 +36,7 @@ const Footer = () => {
               <li>
                 <a
                   href="#benefits"
-                  className="text-zeniks-gray-dark hover:text-zeniks-purple transition-colors"
+                  className="text-zeniks-gray-dark hover:text-zeniks-purple transition-colors text-sm"
                 >
                   Benefits
                 </a>
@@ -45,7 +44,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/blog"
-                  className="text-zeniks-gray-dark hover:text-zeniks-purple transition-colors"
+                  className="text-zeniks-gray-dark hover:text-zeniks-purple transition-colors text-sm"
                 >
                   Blog
                 </Link>
@@ -53,12 +52,12 @@ const Footer = () => {
             </ul>
           </div>
           <div>
-            <h4 className="font-semibold text-zeniks-purple mb-4">Legal</h4>
+            <h4 className="font-semibold text-zeniks-purple mb-4 text-sm">Legal</h4>
             <ul className="space-y-2">
               <li>
                 <Link
                   to="/about"
-                  className="text-zeniks-gray-dark hover:text-zeniks-purple transition-colors"
+                  className="text-zeniks-gray-dark hover:text-zeniks-purple transition-colors text-sm"
                 >
                   About Us
                 </Link>
@@ -66,7 +65,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/privacy-policy"
-                  className="text-zeniks-gray-dark hover:text-zeniks-purple transition-colors"
+                  className="text-zeniks-gray-dark hover:text-zeniks-purple transition-colors text-sm"
                 >
                   Privacy Policy
                 </Link>
@@ -74,7 +73,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/terms"
-                  className="text-zeniks-gray-dark hover:text-zeniks-purple transition-colors"
+                  className="text-zeniks-gray-dark hover:text-zeniks-purple transition-colors text-sm"
                 >
                   Terms and Conditions
                 </Link>
@@ -82,15 +81,20 @@ const Footer = () => {
             </ul>
           </div>
           <div>
-            <h4 className="font-semibold text-zeniks-purple mb-4">Contact</h4>
-            <ul className="space-y-2">
+            <h4 className="font-semibold text-zeniks-purple mb-4 text-sm">Contact</h4>
+            <ul className="space-y-3">
               <li>
                 <a
                   href="mailto:contact@zeniks.com"
-                  className="text-zeniks-gray-dark hover:text-zeniks-purple transition-colors"
+                  className="text-zeniks-gray-dark hover:text-zeniks-purple transition-colors text-sm"
                 >
-                  contact@zeniks.com
+                  📬 contact@zeniks.com
                 </a>
+              </li>
+              <li>
+                <p className="text-zeniks-gray-dark text-sm">
+                  💬 Feedback or feature ideas? We'd love to hear from you.
+                </p>
               </li>
             </ul>
           </div>
