@@ -56,27 +56,6 @@ const Hero = () => {
 
       console.log('Data saved successfully:', data);
 
-      // Call the webhook
-      console.log('Calling webhook...');
-      try {
-        const response = await fetch('https://zeniks.app.n8n.cloud/webhook-test/6c2e1660-debd-490b-ac21-7167d1f0573e', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ url: airbnbUrl, email: email }),
-        });
-
-        console.log('Webhook response status:', response.status);
-        
-        if (!response.ok) {
-          console.error('Webhook error:', response.statusText);
-        }
-      } catch (webhookError) {
-        console.error('Webhook failed but continuing:', webhookError);
-        // Don't fail the whole process if webhook fails
-      }
-
       // Show success toast
       toast({
         title: "🎉 Thanks!",
