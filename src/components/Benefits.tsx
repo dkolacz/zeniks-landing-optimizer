@@ -3,27 +3,27 @@ const Benefits = () => {
   const benefits = [
     {
       emoji: "🔍",
-      title: "Enhance Listing Visibility",
+      title: "Boost Search Ranking",
       description:
-        "Improve your listing's discoverability so more potential guests can find your property.",
+        "Help your listing appear higher in Airbnb search results, so more potential guests find your property.",
     },
     {
-      emoji: "💝",
-      title: "Craft a More Compelling Listing",
+      emoji: "📸",
+      title: "Make Your Listing Irresistible",
       description:
-        "Optimize your listing's content and photos to create a stronger appeal for travelers.",
+        "Upgrade your photos and descriptions to attract clicks, views, and bookings from the right travelers.",
     },
     {
-      emoji: "💡",
-      title: "Gain Expert Insights",
+      emoji: "🤖",
+      title: "Unlock AI-Backed Insights",
       description:
-        "Benefit from an in-depth analysis that reveals your listing's strengths and areas for improvement.",
+        "Get a custom analysis that highlights what's working, what's not, and what you should fix first.",
     },
     {
-      emoji: "👍",
-      title: "Guest-Centric Approach",
+      emoji: "💬",
+      title: "Think Like Your Guests",
       description:
-        "Understand what guests are looking for and tailor your listing to meet their needs and expectations.",
+        "Understand exactly what your guests are looking for — and shape your listing around their needs and expectations.",
     },
   ];
 
@@ -31,7 +31,7 @@ const Benefits = () => {
     <section id="benefits" className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-3xl md:text-4xl font-bold text-center text-zeniks-purple mb-4">
-          Improve Your Listing, Attract More Guests
+          Improve Your Listing, Get More Bookings
         </h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mt-16">
           {benefits.map((benefit, index) => (
