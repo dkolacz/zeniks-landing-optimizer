@@ -56,12 +56,6 @@ const Navbar = () => {
               How It Works
             </button>
             <button
-              onClick={() => scrollToSection("pricing")}
-              className="text-zeniks-gray-dark hover:text-zeniks-purple transition-colors"
-            >
-              Pricing
-            </button>
-            <button
               onClick={() => scrollToSection("benefits")}
               className="text-zeniks-gray-dark hover:text-zeniks-purple transition-colors"
             >
@@ -101,12 +95,6 @@ const Navbar = () => {
                 className="block w-full text-left px-3 py-2 text-zeniks-gray-dark hover:text-zeniks-purple"
               >
                 How It Works
-              </button>
-              <button
-                onClick={() => scrollToSection("pricing")}
-                className="block w-full text-left px-3 py-2 text-zeniks-gray-dark hover:text-zeniks-purple"
-              >
-                Pricing
               </button>
               <button
                 onClick={() => scrollToSection("benefits")}
