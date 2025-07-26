@@ -3,21 +3,21 @@ const HowItWorks = () => {
   const steps = [
     {
       emoji: "🔗",
-      title: "Submit Your Listing URL",
+      title: "Submit Your Airbnb Listing",
       description:
-        "Paste the link to your rental listing on Airbnb, VRBO, Booking.com, or your own website.",
+        "Paste the link to your Airbnb listing - no login required. We'll take care of the rest.",
     },
     {
       emoji: "🧠",
-      title: "AI-Powered Analysis",
+      title: "AI-Powered Listing Audit",
       description:
-        "Zeniks AI model analyzes your listing content, photos, reviews, location and other key factors.",
+        "Zeniks' AI reviews your title, description, pricing, photos, and reviews to identify what's working - and what needs improvement.",
     },
     {
       emoji: "📋",
-      title: "Get Your Actionable Report",
+      title: "Get Your Personalized Report",
       description:
-        "Receive a detailed, easy-to-understand report with specific recommendations to enhance your listing performance.",
+        "Receive a clear, actionable PDF with recommendations to boost visibility, improve conversions, and increase bookings.",
     },
   ];
 
