@@ -179,7 +179,7 @@ const Hero = () => {
           <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-br from-zeniks-purple/20 to-transparent rounded-full blur-3xl"></div>
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-tl from-zeniks-blue/20 to-transparent rounded-full blur-3xl"></div>
         </div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 sm:pt-20">
           <div className="text-center">
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-zeniks-purple mb-6">
               Make Your Airbnb Stand Out with AI
