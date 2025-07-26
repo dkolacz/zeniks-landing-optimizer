@@ -56,11 +56,13 @@ const Hero = () => {
 
       console.log('Data saved successfully:', data);
 
+      console.log('About to show success toast...');
       // Show success toast
       toast({
         title: "🎉 Thanks!",
         description: "Your Airbnb listing is being analyzed. You'll get your personalized AI report by email within 24 hours.",
       });
+      console.log('Success toast called');
 
       // Reset form
       setAirbnbUrl("");
