@@ -11,36 +11,54 @@ const Hero = () => {
   const { toast } = useToast();
 
   const handleAnalyze = async () => {
-    if (airbnbUrl && email) {
-      setIsLoading(true);
+    console.log('Handle analyze called');
+    
+    if (!airbnbUrl || !email) {
+      console.log('Missing required fields:', { airbnbUrl, email });
+      toast({
+        title: "Missing Information",
+        description: "Please fill in both the Airbnb URL and email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    console.log('Form submission started with:', { airbnbUrl, email });
+    
+    try {
+      // Store data in Supabase
+      console.log('About to call Supabase...');
+      
+      const insertData = {
+        airbnb_url: airbnbUrl.trim(),
+        email: email.trim()
+      };
+      
+      console.log('Insert data:', insertData);
+      
+      const { data, error } = await supabase
+        .from('report_requests')
+        .insert([insertData])
+        .select();
+
+      console.log('Supabase response received:', { data, error });
+
+      if (error) {
+        console.error('Supabase error:', error);
+        toast({
+          title: "Database Error",
+          description: error.message || "Failed to save your request. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Data saved successfully:', data);
+
+      // Call the webhook
+      console.log('Calling webhook...');
       try {
-        console.log('Starting form submission...', { airbnbUrl, email });
-        
-        // Store data in Supabase
-        console.log('Attempting to insert into Supabase...');
-        const { data, error } = await supabase
-          .from('report_requests')
-          .insert([
-            {
-              airbnb_url: airbnbUrl,
-              email: email
-            }
-          ])
-          .select();
-
-        console.log('Supabase response:', { data, error });
-
-        if (error) {
-          console.error('Supabase error details:', error);
-          toast({
-            title: "Error",
-            description: `Database error: ${error.message}`,
-            variant: "destructive",
-          });
-          return;
-        }
-
-        // Call the webhook
         const response = await fetch('https://zeniks.app.n8n.cloud/webhook-test/6c2e1660-debd-490b-ac21-7167d1f0573e', {
           method: 'POST',
           headers: {
@@ -49,30 +67,37 @@ const Hero = () => {
           body: JSON.stringify({ url: airbnbUrl, email: email }),
         });
 
-        if (!response.ok) {
-          console.error('Error calling webhook:', response.statusText);
-        }
-
-        // Show success toast
-        toast({
-          title: "🎉 Thanks!",
-          description: "Your Airbnb listing is being analyzed. You'll get your personalized AI report by email within 24 hours.",
-        });
-
-        // Reset form
-        setAirbnbUrl("");
-        setEmail("");
+        console.log('Webhook response status:', response.status);
         
-      } catch (error) {
-        console.error('Error:', error);
-        toast({
-          title: "Error",
-          description: "Something went wrong. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
+        if (!response.ok) {
+          console.error('Webhook error:', response.statusText);
+        }
+      } catch (webhookError) {
+        console.error('Webhook failed but continuing:', webhookError);
+        // Don't fail the whole process if webhook fails
       }
+
+      // Show success toast
+      toast({
+        title: "🎉 Thanks!",
+        description: "Your Airbnb listing is being analyzed. You'll get your personalized AI report by email within 24 hours.",
+      });
+
+      // Reset form
+      setAirbnbUrl("");
+      setEmail("");
+      console.log('Form reset successfully');
+      
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Unexpected Error",
+        description: error instanceof Error ? error.message : "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      console.log('Loading state reset');
     }
   };
 
