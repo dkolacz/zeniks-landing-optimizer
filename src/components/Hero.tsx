@@ -172,19 +172,19 @@ const Hero = () => {
 
   return (
     <>
-      <div className="relative min-h-[85vh] flex items-center bg-gradient-to-br from-zeniks-gray-light via-white to-zeniks-blue/20 overflow-hidden py-12">
+      <div className="relative min-h-[80vh] md:min-h-[85vh] flex items-center bg-gradient-to-br from-zeniks-gray-light via-white to-zeniks-blue/20 overflow-hidden py-8 md:py-12">
         <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
         {/* Abstract pattern overlay */}
         <div className="absolute inset-0 opacity-30">
           <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-br from-zeniks-purple/20 to-transparent rounded-full blur-3xl"></div>
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-tl from-zeniks-blue/20 to-transparent rounded-full blur-3xl"></div>
         </div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 md:pt-16">
           <div className="text-center">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-zeniks-purple mb-6">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-zeniks-purple mb-4 md:mb-6">
               Supercharge Your Airbnb Listing with AI
             </h1>
-            <p className="text-xl md:text-2xl text-zeniks-gray-dark max-w-3xl mx-auto mb-8">
+            <p className="text-lg sm:text-xl md:text-2xl text-zeniks-gray-dark max-w-3xl mx-auto mb-6 md:mb-8">
               Get a free, personalized AI-powered audit to increase bookings and improve your listing's visibility. Just paste your URL.
             </p>
             
@@ -233,9 +233,9 @@ const Hero = () => {
                     )}
                   </button>
                   
-                  {/* Sample Report Preview */}
-                  <div className="mt-4 flex flex-col items-center gap-2">
-                    <p className="text-xs text-zeniks-gray-dark">
+                  {/* Sample Report Preview - grouped closer to CTA */}
+                  <div className="mt-2 flex flex-col items-center gap-1">
+                    <p className="text-[10px] sm:text-xs text-zeniks-gray-dark/80">
                       Want to see what you'll get?
                     </p>
                     <Dialog open={showSampleModal} onOpenChange={setShowSampleModal}>
@@ -244,9 +244,9 @@ const Hero = () => {
                           <img 
                             src={sampleReport} 
                             alt="Sample Zeniks AI report preview" 
-                            className="w-24 h-16 object-cover rounded-md border border-zeniks-gray-light/50 shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-300 group-hover:border-zeniks-purple/30 opacity-80 hover:opacity-100"
+                            className="w-20 h-12 sm:w-22 sm:h-14 object-cover rounded-md border border-zeniks-gray-light/40 shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-300 group-hover:border-zeniks-purple/30 opacity-75 hover:opacity-95"
                           />
-                          <p className="text-xs text-zeniks-purple/70 mt-1 group-hover:text-zeniks-purple transition-colors">
+                          <p className="text-[10px] sm:text-xs text-zeniks-purple/60 mt-0.5 group-hover:text-zeniks-purple transition-colors">
                             Sample report
                           </p>
                         </div>
@@ -266,16 +266,16 @@ const Hero = () => {
                         </div>
                       </DialogContent>
                     </Dialog>
+                  </div>
                     
-                    {/* Report Counter moved below preview */}
-                    <div className="mt-2 text-center">
-                      <p className="text-xs text-zeniks-gray-dark">
-                        ✅ {reportCount} / 100 free AI reports claimed
-                      </p>
-                      <p className="text-xs text-zeniks-gray-dark/70 mt-0.5">
-                        Zeniks is in Beta and open to early hosts.
-                      </p>
-                    </div>
+                  {/* Report Counter - more compact and subtle */}
+                  <div className="mt-3 text-center">
+                    <p className="text-[10px] sm:text-xs text-zeniks-gray-dark/70">
+                      ✅ {reportCount} / 100 free AI reports claimed
+                    </p>
+                    <p className="text-[9px] sm:text-[10px] text-zeniks-gray-dark/50 mt-0.5">
+                      Zeniks is in Beta and open to early hosts.
+                    </p>
                   </div>
                 </div>
               </div>
