@@ -17,18 +17,71 @@ const Hero = () => {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [urlError, setUrlError] = useState("");
+  const [emailError, setEmailError] = useState("");
   const { toast } = useToast();
+
+  // Validation functions
+  const validateUrl = (url: string) => {
+    if (!url.trim()) {
+      return "Airbnb URL is required";
+    }
+    try {
+      new URL(url);
+      if (!url.includes('airbnb.com')) {
+        return "Please enter a valid Airbnb listing URL";
+      }
+      return "";
+    } catch {
+      return "Please enter a valid URL";
+    }
+  };
+
+  const validateEmail = (email: string) => {
+    if (!email.trim()) {
+      return "Email address is required";
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return "Please enter a valid email address";
+    }
+    return "";
+  };
+
+  const handleUrlChange = (value: string) => {
+    setAirbnbUrl(value);
+    if (urlError) {
+      setUrlError(validateUrl(value));
+    }
+  };
+
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    if (emailError) {
+      setEmailError(validateEmail(value));
+    }
+  };
+
+  const handleUrlBlur = () => {
+    setUrlError(validateUrl(airbnbUrl));
+  };
+
+  const handleEmailBlur = () => {
+    setEmailError(validateEmail(email));
+  };
 
   const handleAnalyze = async () => {
     console.log('Handle analyze called');
     
-    if (!airbnbUrl || !email) {
-      console.log('Missing required fields:', { airbnbUrl, email });
-      toast({
-        title: "Missing Information",
-        description: "Please fill in both the Airbnb URL and email address.",
-        variant: "destructive",
-      });
+    // Validate inputs first
+    const urlValidationError = validateUrl(airbnbUrl);
+    const emailValidationError = validateEmail(email);
+    
+    setUrlError(urlValidationError);
+    setEmailError(emailValidationError);
+    
+    if (urlValidationError || emailValidationError) {
+      console.log('Validation failed:', { urlValidationError, emailValidationError });
       return;
     }
 
@@ -70,9 +123,11 @@ const Hero = () => {
       setShowSuccessDialog(true);
       console.log('Success dialog opened');
 
-      // Reset form
+      // Reset form and clear errors
       setAirbnbUrl("");
       setEmail("");
+      setUrlError("");
+      setEmailError("");
       console.log('Form reset successfully');
       
     } catch (error) {
@@ -103,24 +158,36 @@ const Hero = () => {
             
             <div className="max-w-2xl mx-auto">
               <div className="flex flex-col gap-4">
-                <Input
-                  type="url"
-                  placeholder="Your Airbnb Listing URL"
-                  className="w-full py-6 text-base"
-                  value={airbnbUrl}
-                  onChange={(e) => setAirbnbUrl(e.target.value)}
-                />
-                <Input
-                  type="email"
-                  placeholder="Your Email Address"
-                  className="w-full py-6 text-base"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
-                />
+                <div>
+                  <Input
+                    type="url"
+                    placeholder="Your Airbnb Listing URL"
+                    className={`w-full py-6 text-base ${urlError ? 'border-red-500 focus:border-red-500' : ''}`}
+                    value={airbnbUrl}
+                    onChange={(e) => handleUrlChange(e.target.value)}
+                    onBlur={handleUrlBlur}
+                  />
+                  {urlError && (
+                    <p className="text-red-500 text-sm mt-2 text-left">{urlError}</p>
+                  )}
+                </div>
+                <div>
+                  <Input
+                    type="email"
+                    placeholder="Your Email Address"
+                    className={`w-full py-6 text-base ${emailError ? 'border-red-500 focus:border-red-500' : ''}`}
+                    value={email}
+                    onChange={(e) => handleEmailChange(e.target.value)}
+                    onBlur={handleEmailBlur}
+                    onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
+                  />
+                  {emailError && (
+                    <p className="text-red-500 text-sm mt-2 text-left">{emailError}</p>
+                  )}
+                </div>
                 <button
                   onClick={handleAnalyze}
-                  disabled={!airbnbUrl || !email || isLoading}
+                  disabled={!airbnbUrl || !email || isLoading || !!urlError || !!emailError}
                   className="bg-zeniks-purple text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-opacity-90 transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? "Processing..." : "Get My Free Report →"}
