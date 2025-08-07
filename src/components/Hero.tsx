@@ -143,6 +143,32 @@ const Hero = () => {
 
       console.log('Data saved successfully:', data);
 
+      // Add to MailerLite
+      try {
+        console.log('Adding to MailerLite...');
+        const mailerLiteResponse = await fetch('https://mubmcqhraztyetyvfvaj.supabase.co/functions/v1/add-mailerlite-subscriber', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11Ym1jcWhyYXp0eWV0eXZmdmFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYxMDc3MjMsImV4cCI6MjA1MTY4MzcyM30.FHSundftU9Zg-DznN44IOPlfw_NRJZG5gTPGDw14ePk',
+          },
+          body: JSON.stringify({
+            email: email.trim(),
+            airbnb_url: airbnbUrl.trim(),
+          }),
+        });
+
+        if (!mailerLiteResponse.ok) {
+          console.error('MailerLite integration failed:', await mailerLiteResponse.text());
+          // Don't fail the whole process if MailerLite fails
+        } else {
+          console.log('Successfully added to MailerLite');
+        }
+      } catch (error) {
+        console.error('MailerLite integration error:', error);
+        // Don't fail the whole process if MailerLite fails
+      }
+
       console.log('About to show success dialog...');
       // Increment report counter
       setReportCount(prev => prev + 1);
