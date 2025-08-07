@@ -170,8 +170,15 @@ const Hero = () => {
       }
 
       console.log('About to show success dialog...');
-      // Increment report counter
-      setReportCount(prev => prev + 1);
+      
+      // Refresh report counter from database to get the updated count
+      const { count: updatedCount } = await supabase
+        .from('report_requests')
+        .select('*', { count: 'exact', head: true });
+      
+      if (updatedCount !== null) {
+        setReportCount(Math.max(updatedCount, 27));
+      }
       
       // Show success dialog
       setShowSuccessDialog(true);
