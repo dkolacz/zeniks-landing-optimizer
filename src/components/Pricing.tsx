@@ -3,6 +3,7 @@ import { useState } from "react";
 import { FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import sampleReport from "@/assets/sample-report.jpg";
 import ReportPreview from "@/components/ReportPreview";
 
 const Pricing = () => {
@@ -20,12 +21,12 @@ const Pricing = () => {
           </p>
           
           <div className="mb-8">
-            <div 
-              className="w-full max-w-xs mx-auto h-48 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl shadow-lg border border-gray-200 cursor-pointer hover:shadow-xl transition-shadow duration-300 flex items-center justify-center"
+            <img 
+              src={sampleReport} 
+              alt="Sample Zeniks AI report preview" 
+              className="w-full max-w-xs mx-auto h-auto rounded-xl shadow-lg border border-gray-200 cursor-pointer hover:shadow-xl transition-shadow duration-300"
               onClick={() => setIsModalOpen(true)}
-            >
-              <div className="text-blue-600 text-lg font-medium">Interactive Report Preview</div>
-            </div>
+            />
           </div>
           
           <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>

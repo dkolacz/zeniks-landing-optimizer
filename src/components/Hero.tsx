@@ -12,6 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import sampleReport from "@/assets/sample-report.jpg";
 import ReportPreview from "@/components/ReportPreview";
 
 const Hero = () => {
@@ -248,9 +249,11 @@ const Hero = () => {
                                Preview a Real Report
                              </p>
                            </div>
-                           <div className="w-24 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg border border-zeniks-gray-light shadow-sm mx-auto transform group-hover:scale-105 transition-all duration-300 flex items-center justify-center">
-                             <div className="text-blue-600 text-xs font-medium">Report</div>
-                           </div>
+                           <img 
+                             src={sampleReport} 
+                             alt="Sample Zeniks AI report preview" 
+                             className="w-24 h-16 object-cover rounded-lg border border-zeniks-gray-light shadow-sm mx-auto transform group-hover:scale-105 transition-all duration-300"
+                           />
                            <p className="text-xs text-zeniks-gray-dark mt-2 text-center opacity-80 group-hover:opacity-100 transition-opacity">
                              Click to view full sample
                            </p>
