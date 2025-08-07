@@ -20,7 +20,7 @@ serve(async (req) => {
       fields: {
         airbnb_url: airbnb_url
       },
-      groups: ['142779501276824694'] // Group ID for report requests
+      groups: ['146785666666071396'] // New group ID for report requests
     };
     
     console.log('Sending data to MailerLite:', JSON.stringify(subscriberData, null, 2));
