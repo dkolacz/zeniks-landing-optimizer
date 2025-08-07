@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import sampleReport from "@/assets/sample-report.jpg";
+import ReportPreview from "@/components/ReportPreview";
 
 const Hero = () => {
   const [airbnbUrl, setAirbnbUrl] = useState("");
@@ -248,30 +248,22 @@ const Hero = () => {
                                Preview a Real Report
                              </p>
                            </div>
-                           <img 
-                             src={sampleReport} 
-                             alt="Sample Zeniks AI report preview" 
-                             className="w-24 h-16 object-cover rounded-lg border border-zeniks-gray-light shadow-sm mx-auto transform group-hover:scale-105 transition-all duration-300"
-                           />
+                           <div className="w-24 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg border border-zeniks-gray-light shadow-sm mx-auto transform group-hover:scale-105 transition-all duration-300 flex items-center justify-center">
+                             <div className="text-blue-600 text-xs font-medium">Report</div>
+                           </div>
                            <p className="text-xs text-zeniks-gray-dark mt-2 text-center opacity-80 group-hover:opacity-100 transition-opacity">
                              Click to view full sample
                            </p>
                          </div>
                        </div>
                      </DialogTrigger>
-                     <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
-                       <DialogHeader>
+                     <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden p-0">
+                       <DialogHeader className="p-6 pb-0">
                          <DialogTitle className="text-zeniks-purple text-xl font-bold">
                            Sample Zeniks AI Report
                          </DialogTitle>
                        </DialogHeader>
-                       <div className="mt-4">
-                         <img 
-                           src={sampleReport} 
-                           alt="Sample Zeniks AI listing analysis report" 
-                           className="w-full h-auto rounded-lg shadow-lg"
-                         />
-                       </div>
+                       <ReportPreview />
                      </DialogContent>
                    </Dialog>
                  </div>
