@@ -13,8 +13,8 @@ const Index = () => {
   const location = useLocation();
 
   useEffect(() => {
-    document.title = "Optimize Your Vacation Rental Listing | Zeniks";
-    document.querySelector('meta[name="description"]')?.setAttribute("content", "Zeniks provides AI-driven analysis for your vacation rental listing (Airbnb, VRBO and more.). Get a personalized report with recommendations to enhance your listing, attract more guests, and increase bookings.");
+    document.title = "Make Your Airbnb Stand Out with AI | Zeniks";
+    document.querySelector('meta[name="description"]')?.setAttribute("content", "Get a free, personalized AI-powered report to improve your Airbnb listing's visibility and bookings.");
     
     // Handle section scrolling when navigating from other pages
     const searchParams = new URLSearchParams(location.search);
