@@ -16,9 +16,9 @@ serve(async (req) => {
     console.log('Adding subscriber to MailerLite:', { email, airbnb_url });
 
     const subscriberData = {
-      email: email,
+      email,
       fields: {
-        airbnb_url: airbnb_url
+        listing_url: airbnb_url // MailerLite field tag {$listing_url}
       },
       groups: ['146785666666071396'] // New group ID for report requests
     };
