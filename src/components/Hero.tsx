@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import sampleReport from "@/assets/sample-report.jpg";
 import ReportPreview from "@/components/ReportPreview";
+import { CheckCircle2, Mail, Clock } from "lucide-react";
 
 const Hero = () => {
   const [airbnbUrl, setAirbnbUrl] = useState("");
@@ -26,6 +27,27 @@ const Hero = () => {
   const [showSampleModal, setShowSampleModal] = useState(false);
   const { toast } = useToast();
 
+  const autoCloseTimerRef = useRef<number | null>(null);
+  const cancelAutoClose = () => {
+    if (autoCloseTimerRef.current) {
+      clearTimeout(autoCloseTimerRef.current);
+      autoCloseTimerRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    if (showSuccessDialog) {
+      autoCloseTimerRef.current = window.setTimeout(() => {
+        setShowSuccessDialog(false);
+      }, 7000);
+    }
+    return () => {
+      if (autoCloseTimerRef.current) {
+        clearTimeout(autoCloseTimerRef.current);
+        autoCloseTimerRef.current = null;
+      }
+    };
+  }, [showSuccessDialog]);
   // Fetch current report count on component mount
   useEffect(() => {
     const fetchReportCount = async () => {
@@ -307,20 +329,52 @@ const Hero = () => {
 
       {/* Success Dialog */}
       <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-        <DialogContent className="sm:max-w-[600px] text-center p-8">
-          <DialogHeader className="space-y-6">
-            <div className="text-6xl">🎉</div>
-            <DialogTitle className="text-3xl font-bold text-zeniks-purple">
-              Thanks!
+        <DialogContent
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="success-dialog-title"
+          className="max-w-[560px] text-center p-8 leading-relaxed"
+          onMouseEnter={cancelAutoClose}
+          onFocusCapture={cancelAutoClose}
+        >
+          <div className="mx-auto h-14 w-14 rounded-full bg-zeniks-purple/10 text-zeniks-purple flex items-center justify-center shadow-sm">
+            <CheckCircle2 className="h-8 w-8" aria-hidden="true" />
+          </div>
+          <DialogHeader className="space-y-4">
+            <DialogTitle
+              id="success-dialog-title"
+              className="text-2xl sm:text-3xl font-bold text-zeniks-purple"
+            >
+              🎉 Thanks! Your Airbnb listing is in good hands.
             </DialogTitle>
-            <DialogDescription className="text-xl text-zeniks-gray-dark leading-relaxed">
-              Your Airbnb listing is being analyzed. You'll get your personalized AI report by email within 24 hours.
+            <DialogDescription className="text-base sm:text-lg text-zeniks-gray-dark">
+              We’re analyzing your listing now. You’ll receive an email from <strong>Zeniks</strong> in a few minutes with next steps, and your personalized AI report within <strong>24 hours</strong>.
             </DialogDescription>
+            <p className="text-sm sm:text-base text-zeniks-gray-dark">
+              📬 Please check your inbox — and spam/junk just in case — for our confirmation email.
+            </p>
           </DialogHeader>
+
+          <ul className="mt-4 text-left space-y-3" role="list">
+            <li className="flex items-center gap-3">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-zeniks-purple/10 text-zeniks-purple">
+                <Mail className="h-4 w-4" aria-hidden="true" />
+              </span>
+              <span className="text-sm sm:text-base">Confirmation email arriving shortly</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-zeniks-purple/10 text-zeniks-purple">
+                <Clock className="h-4 w-4" aria-hidden="true" />
+              </span>
+              <span className="text-sm sm:text-base">Full AI report delivered within 24 hours</span>
+            </li>
+          </ul>
+
           <div className="mt-8">
-            <Button 
+            <Button
+              size="lg"
               onClick={() => setShowSuccessDialog(false)}
-              className="bg-zeniks-purple hover:bg-zeniks-purple/90 text-white px-8 py-3 text-lg font-semibold"
+              className="bg-zeniks-purple hover:bg-zeniks-purple/90 text-white"
             >
               I Understand
             </Button>
