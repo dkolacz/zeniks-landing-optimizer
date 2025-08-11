@@ -48,18 +48,14 @@ const Hero = () => {
 
   // Validation functions
   const validateUrl = (url: string) => {
-    if (!url.trim()) {
+    const value = url.trim().toLowerCase();
+    if (!value) {
       return "Airbnb URL is required";
     }
-    try {
-      new URL(url);
-      if (!url.includes('airbnb.com')) {
-        return "Please enter a valid Airbnb listing URL";
-      }
-      return "";
-    } catch {
-      return "Please enter a valid URL";
+    if (!value.includes("airbnb")) {
+      return "Please enter an Airbnb listing URL";
     }
+    return "";
   };
 
   const validateEmail = (email: string) => {
