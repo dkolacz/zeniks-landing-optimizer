@@ -14,15 +14,13 @@ import {
 import { Button } from "@/components/ui/button";
 import sampleReport from "@/assets/sample-report.jpg";
 import ReportPreview from "@/components/ReportPreview";
-import { CheckCircle2, Mail, Clock } from "lucide-react";
+import { CheckCircle2, Clock } from "lucide-react";
 
 const Hero = () => {
   const [airbnbUrl, setAirbnbUrl] = useState("");
-  const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [urlError, setUrlError] = useState("");
-  const [emailError, setEmailError] = useState("");
   const [reportCount, setReportCount] = useState(27); // Start with 27 as baseline
   const [showSampleModal, setShowSampleModal] = useState(false);
   const { toast } = useToast();
@@ -80,16 +78,6 @@ const Hero = () => {
     return "";
   };
 
-  const validateEmail = (email: string) => {
-    if (!email.trim()) {
-      return "Email address is required";
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return "Please enter a valid email address";
-    }
-    return "";
-  };
 
   const handleUrlChange = (value: string) => {
     setAirbnbUrl(value);
@@ -98,19 +86,8 @@ const Hero = () => {
     }
   };
 
-  const handleEmailChange = (value: string) => {
-    setEmail(value);
-    if (emailError) {
-      setEmailError(validateEmail(value));
-    }
-  };
-
   const handleUrlBlur = () => {
     setUrlError(validateUrl(airbnbUrl));
-  };
-
-  const handleEmailBlur = () => {
-    setEmailError(validateEmail(email));
   };
 
   const handleAnalyze = async () => {
@@ -118,26 +95,23 @@ const Hero = () => {
     
     // Validate inputs first
     const urlValidationError = validateUrl(airbnbUrl);
-    const emailValidationError = validateEmail(email);
     
     setUrlError(urlValidationError);
-    setEmailError(emailValidationError);
     
-    if (urlValidationError || emailValidationError) {
-      console.log('Validation failed:', { urlValidationError, emailValidationError });
+    if (urlValidationError) {
+      console.log('Validation failed:', { urlValidationError });
       return;
     }
 
     setIsLoading(true);
-    console.log('Form submission started with:', { airbnbUrl, email });
+    console.log('Form submission started with:', { airbnbUrl });
     
     try {
       // Store data in Supabase
       console.log('About to call Supabase...');
       
       const insertData = {
-        airbnb_url: airbnbUrl.trim(),
-        email: email.trim()
+        airbnb_url: airbnbUrl.trim()
       };
       
       console.log('Insert data:', insertData);
@@ -161,32 +135,6 @@ const Hero = () => {
 
       console.log('Data saved successfully:', data);
 
-      // Add to MailerLite
-      try {
-        console.log('Adding to MailerLite...');
-        const mailerLiteResponse = await fetch('https://mubmcqhraztyetyvfvaj.supabase.co/functions/v1/add-mailerlite-subscriber', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11Ym1jcWhyYXp0eWV0eXZmdmFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYxMDc3MjMsImV4cCI6MjA1MTY4MzcyM30.FHSundftU9Zg-DznN44IOPlfw_NRJZG5gTPGDw14ePk',
-          },
-          body: JSON.stringify({
-            email: email.trim(),
-            airbnb_url: airbnbUrl.trim(),
-          }),
-        });
-
-        if (!mailerLiteResponse.ok) {
-          console.error('MailerLite integration failed:', await mailerLiteResponse.text());
-          // Don't fail the whole process if MailerLite fails
-        } else {
-          console.log('Successfully added to MailerLite');
-        }
-      } catch (error) {
-        console.error('MailerLite integration error:', error);
-        // Don't fail the whole process if MailerLite fails
-      }
-
       console.log('About to show success dialog...');
       
       // Refresh report counter from database to get the updated count
@@ -204,9 +152,7 @@ const Hero = () => {
 
       // Reset form and clear errors
       setAirbnbUrl("");
-      setEmail("");
       setUrlError("");
-      setEmailError("");
       console.log('Form reset successfully');
       
     } catch (error) {
@@ -255,23 +201,9 @@ const Hero = () => {
                     <p className="text-red-500 text-sm mt-2 text-left">{urlError}</p>
                   )}
                 </div>
-                <div>
-                  <Input
-                    type="email"
-                    placeholder="Your Email Address"
-                    className={`w-full py-6 text-base ${emailError ? 'border-red-500 focus:border-red-500' : ''}`}
-                    value={email}
-                    onChange={(e) => handleEmailChange(e.target.value)}
-                    onBlur={handleEmailBlur}
-                    onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
-                  />
-                  {emailError && (
-                    <p className="text-red-500 text-sm mt-2 text-left">{emailError}</p>
-                  )}
-                </div>
                 <button
                   onClick={handleAnalyze}
-                  disabled={!airbnbUrl || !email || isLoading || !!urlError || !!emailError}
+                  disabled={!airbnbUrl || isLoading || !!urlError}
                   className="bg-zeniks-purple text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-zeniks-purple/90 hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? "Processing..." : (
@@ -358,15 +290,9 @@ const Hero = () => {
           <ul className="mt-4 text-left space-y-3" role="list">
             <li className="flex items-center gap-3">
               <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-zeniks-purple/10 text-zeniks-purple">
-                <Mail className="h-4 w-4" aria-hidden="true" />
-              </span>
-              <span className="text-sm sm:text-base">Confirmation email arriving shortly</span>
-            </li>
-            <li className="flex items-center gap-3">
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-zeniks-purple/10 text-zeniks-purple">
                 <Clock className="h-4 w-4" aria-hidden="true" />
               </span>
-              <span className="text-sm sm:text-base">Full AI report delivered within 24 hours</span>
+              <span className="text-sm sm:text-base">AI analysis complete within 24 hours</span>
             </li>
           </ul>
 
