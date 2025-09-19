@@ -78,6 +78,7 @@ export type Database = {
           id: number
           inserted_at: string | null
           listing_id: string
+          original_url: string | null
           url: string | null
         }
         Insert: {
@@ -86,6 +87,7 @@ export type Database = {
           id?: number
           inserted_at?: string | null
           listing_id: string
+          original_url?: string | null
           url?: string | null
         }
         Update: {
@@ -94,6 +96,7 @@ export type Database = {
           id?: number
           inserted_at?: string | null
           listing_id?: string
+          original_url?: string | null
           url?: string | null
         }
         Relationships: []

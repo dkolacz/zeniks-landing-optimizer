@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,7 @@ const Hero = () => {
   const [reportCount, setReportCount] = useState(27); // Start with 27 as baseline
   const [showSampleModal, setShowSampleModal] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const autoCloseTimerRef = useRef<number | null>(null);
   const cancelAutoClose = () => {
@@ -90,6 +92,12 @@ const Hero = () => {
     setUrlError(validateUrl(airbnbUrl));
   };
 
+  // Extract listing_id from Airbnb URL
+  const extractListingId = (url: string) => {
+    const match = url.match(/\/rooms\/(\d+)/);
+    return match ? match[1] : null;
+  };
+
   const handleAnalyze = async () => {
     console.log('Handle analyze called');
     
@@ -103,58 +111,71 @@ const Hero = () => {
       return;
     }
 
+    // Extract listing_id from URL
+    const listingId = extractListingId(airbnbUrl);
+    if (!listingId) {
+      setUrlError("Could not extract listing ID from URL. Please ensure it contains /rooms/[number]");
+      return;
+    }
+
     setIsLoading(true);
-    console.log('Form submission started with:', { airbnbUrl });
+    console.log('Form submission started with:', { airbnbUrl, listingId });
     
     try {
-      // Store data in Supabase
-      console.log('About to call Supabase...');
+      // Store original URL in results table
+      console.log('Storing original URL in results table...');
       
-      const insertData = {
-        airbnb_url: airbnbUrl.trim(),
-        email: null
-      };
-      
-      console.log('Insert data:', insertData);
-      
-      const { data, error } = await supabase
-        .from('report_requests')
-        .insert([insertData])
+      const { data: resultsData, error: resultsError } = await supabase
+        .from('results')
+        .insert([{ 
+          original_url: airbnbUrl.trim(),
+          listing_id: listingId 
+        }])
         .select();
 
-      console.log('Supabase response received:', { data, error });
+      console.log('Results table response:', { resultsData, resultsError });
 
-      if (error) {
-        console.error('Supabase error:', error);
+      if (resultsError) {
+        console.error('Results table error:', resultsError);
         toast({
           title: "Database Error",
-          description: error.message || "Failed to save your request. Please try again.",
+          description: resultsError.message || "Failed to save your request. Please try again.",
           variant: "destructive",
         });
         return;
       }
 
-      console.log('Data saved successfully:', data);
+      console.log('Original URL stored successfully:', resultsData);
 
-      console.log('About to show success dialog...');
-      
-      // Refresh report counter from database to get the updated count
-      const { count: updatedCount } = await supabase
-        .from('report_requests')
-        .select('*', { count: 'exact', head: true });
-      
-      if (updatedCount !== null) {
-        setReportCount(Math.max(updatedCount, 27));
+      // Make POST request to backend
+      console.log('Making POST request to backend...');
+      try {
+        const backendResponse = await fetch('https://zeniks.onrender.com/scrape', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            listing_id: listingId
+          }),
+        });
+
+        console.log('Backend response status:', backendResponse.status);
+        
+        if (!backendResponse.ok) {
+          console.error('Backend request failed:', backendResponse.statusText);
+          // Don't fail the whole process, just log the error
+        } else {
+          console.log('Backend request successful');
+        }
+      } catch (backendError) {
+        console.error('Backend request error:', backendError);
+        // Don't fail the whole process, just log the error
       }
-      
-      // Show success dialog
-      setShowSuccessDialog(true);
-      console.log('Success dialog opened');
 
-      // Reset form and clear errors
-      setAirbnbUrl("");
-      setUrlError("");
-      console.log('Form reset successfully');
+      // Navigate to product page
+      console.log('Navigating to product page...');
+      navigate(`/product?listing_id=${listingId}`);
       
     } catch (error) {
       console.error('Unexpected error:', error);
