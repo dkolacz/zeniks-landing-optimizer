@@ -12,6 +12,10 @@ import {
 import sampleReport from "@/assets/sample-report.jpg";
 import ReportPreview from "@/components/ReportPreview";
 
+// Edge function direct-call fallback config
+const SUPABASE_URL = "https://mubmcqhraztyetyvfvaj.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11Ym1jcWhyYXp0eWV0eXZmdmFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYxMDc3MjMsImV4cCI6MjA1MTY4MzcyM30.FHSundftU9Zg-DznN44IOPlfw_NRJZG5gTPGDw14ePk";
+
 const Hero = () => {
   const [airbnbUrl, setAirbnbUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -112,57 +116,69 @@ const Hero = () => {
 
       console.log('Data saved successfully:', data);
       
-      // Immediately call the scraper via Edge Function (avoids CORS/timeouts)
+      // Immediately call the scraper via Edge Function (with timeout + direct fetch fallback)
       try {
         console.log('=== SCRAPER EDGE INVOKE START ===');
-        const { data: fnData, error: fnError } = await supabase.functions.invoke('trigger-scraper', {
+
+        const invokePromise = supabase.functions.invoke('trigger-scraper', {
           body: { listing_id: listingId },
         });
-        console.log('Edge function response:', { fnData, fnError });
 
-        if (fnError) {
-          console.error('Edge function error:', fnError);
-          toast({
-            title: 'API Error',
-            description: fnError.message || 'Failed to invoke scraper function',
-            variant: 'destructive',
-          });
-          // Update status to failed
-          const { error: updateError } = await supabase
-            .from('requests')
-            .update({ fetched_at: new Date().toISOString(), status: 'failed' })
-            .eq('id', data[0].id);
-          if (updateError) console.error('Error updating request status to failed:', updateError);
-        } else if (!fnData?.success) {
-          console.error('Scraper function returned unsuccessful response:', fnData);
-          toast({
-            title: 'API Error',
-            description: typeof fnData?.error === 'string' ? fnData.error : 'Scraper failed',
-            variant: 'destructive',
-          });
-          const { error: updateError } = await supabase
-            .from('requests')
-            .update({ fetched_at: new Date().toISOString(), status: 'failed' })
-            .eq('id', data[0].id);
-          if (updateError) console.error('Error updating request status to failed:', updateError);
-        } else {
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Edge invoke timeout')), 20000)
+        );
+
+        const invokeResult: any = await Promise.race([invokePromise, timeoutPromise]);
+
+        // If we got here with a normal result
+        if (invokeResult && 'data' in invokeResult) {
+          const { data: fnData, error: fnError } = invokeResult;
+          console.log('Edge function response:', { fnData, fnError });
+
+          if (fnError) throw fnError;
+          if (!fnData?.success) throw new Error(typeof fnData?.error === 'string' ? fnData.error : 'Scraper failed');
+
           const scraperData = fnData.data;
           console.log('Scraper data received from edge:', scraperData);
           const { error: updateError } = await supabase
             .from('requests')
             .update({ data: scraperData, fetched_at: new Date().toISOString(), status: 'done' })
             .eq('id', data[0].id);
-          if (updateError) {
-            console.error('Error updating request with data:', updateError);
-          } else {
-            console.log('Request updated successfully with scraped data');
+          if (updateError) console.error('Error updating request with data:', updateError);
+        } else {
+          // Timed out -> fallback to direct fetch
+          console.warn('Edge invoke timed out, falling back to direct fetch');
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000);
+          const resp = await fetch(`${SUPABASE_URL}/functions/v1/trigger-scraper`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${SUPABASE_ANON}`,
+              'apikey': SUPABASE_ANON,
+            },
+            body: JSON.stringify({ listing_id: listingId }),
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+          if (!resp.ok) {
+            const txt = await resp.text();
+            throw new Error(`Edge HTTP ${resp.status}: ${txt}`);
           }
+          const fnData = await resp.json();
+          if (!fnData?.success) throw new Error(typeof fnData?.error === 'string' ? fnData.error : 'Scraper failed');
+          const scraperData = fnData.data;
+          const { error: updateError } = await supabase
+            .from('requests')
+            .update({ data: scraperData, fetched_at: new Date().toISOString(), status: 'done' })
+            .eq('id', data[0].id);
+          if (updateError) console.error('Error updating request with data:', updateError);
         }
       } catch (scraperError: any) {
-        console.error('=== EDGE INVOKE ERROR ===', scraperError);
+        console.error('=== SCRAPER CALL ERROR (EDGE + FALLBACK) ===', scraperError);
         toast({
-          title: 'Network Error',
-          description: `Failed to reach edge function: ${scraperError?.message || scraperError}`,
+          title: 'Scraper Error',
+          description: scraperError?.message || 'Failed to trigger scraper',
           variant: 'destructive',
         });
         const { error: updateError } = await supabase
