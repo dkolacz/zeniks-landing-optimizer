@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.normalize]
 verify_jwt = false
+
+[functions.manual-normalize]
+verify_jwt = false
