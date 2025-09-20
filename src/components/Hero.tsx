@@ -141,21 +141,40 @@ const Hero = () => {
           const scraperData = fnData.data;
           console.log('Scraper data received from edge:', scraperData);
           
-          // Show success toast
-          toast({
-            title: "Success!",
-            description: "Your listing has been analyzed successfully.",
-            variant: "default",
-          });
+          // Update the requests table with the response data
+          console.log('=== DATABASE UPDATE START ===');
+          console.log('Updating request ID:', data[0].id);
+          console.log('Scraper data to store:', JSON.stringify(scraperData, null, 2));
           
-          const { error: updateError } = await supabase
+          const { data: updateData, error: updateError } = await supabase
             .from('requests')
-            .update({ data: scraperData, fetched_at: new Date().toISOString(), status: 'done' })
-            .eq('id', data[0].id);
+            .update({ 
+              data: scraperData, 
+              fetched_at: new Date().toISOString(), 
+              status: 'done' 
+            })
+            .eq('id', data[0].id)
+            .select();
+
+          console.log('=== DATABASE UPDATE RESULT ===');
+          console.log('Update data:', updateData);
+          console.log('Update error:', updateError);
+          
           if (updateError) {
             console.error('Error updating request with data:', updateError);
+            toast({
+              title: "Database Update Error",
+              description: `Failed to store response: ${updateError.message}`,
+              variant: "destructive",
+            });
           } else {
             console.log('Request updated successfully with scraped data');
+            // Show success toast
+            toast({
+              title: "Success!",
+              description: "Your listing has been analyzed and data stored successfully.",
+              variant: "default",
+            });
           }
         } else {
           // Timed out -> fallback to direct fetch
@@ -182,21 +201,40 @@ const Hero = () => {
           const scraperData = fnData.data;
           console.log('Scraper data received from fallback:', scraperData);
           
-          // Show success toast
-          toast({
-            title: "Success!",
-            description: "Your listing has been analyzed successfully.",
-            variant: "default",
-          });
+          // Update the requests table with the response data
+          console.log('=== DATABASE UPDATE (FALLBACK) START ===');
+          console.log('Updating request ID:', data[0].id);
+          console.log('Scraper data to store:', JSON.stringify(scraperData, null, 2));
           
-          const { error: updateError } = await supabase
+          const { data: updateData, error: updateError } = await supabase
             .from('requests')
-            .update({ data: scraperData, fetched_at: new Date().toISOString(), status: 'done' })
-            .eq('id', data[0].id);
+            .update({ 
+              data: scraperData, 
+              fetched_at: new Date().toISOString(), 
+              status: 'done' 
+            })
+            .eq('id', data[0].id)
+            .select();
+
+          console.log('=== DATABASE UPDATE (FALLBACK) RESULT ===');
+          console.log('Update data:', updateData);
+          console.log('Update error:', updateError);
+          
           if (updateError) {
             console.error('Error updating request with data:', updateError);
+            toast({
+              title: "Database Update Error",
+              description: `Failed to store response: ${updateError.message}`,
+              variant: "destructive",
+            });
           } else {
             console.log('Request updated successfully with scraped data via fallback');
+            // Show success toast
+            toast({
+              title: "Success!",
+              description: "Your listing has been analyzed and data stored successfully.",
+              variant: "default",
+            });
           }
         }
       } catch (scraperError: any) {
