@@ -127,35 +127,21 @@ const Product = () => {
           </div>
 
           {isLoading && (
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/40 text-center">
-              <div className="space-y-6">
-                {steps.map((step, index) => (
-                  <div
-                    key={index}
-                    className={`transition-all duration-500 ${
-                      index <= currentStep
-                        ? 'opacity-100 transform translate-y-0'
-                        : 'opacity-30 transform translate-y-2'
-                    }`}
-                  >
-                    <p
-                      className={`text-lg font-medium ${
-                        index === currentStep
-                          ? 'text-zeniks-purple scale-105'
-                          : 'text-zeniks-gray-dark'
-                      } transition-all duration-500`}
-                    >
-                      {step}
-                    </p>
-                  </div>
-                ))}
+            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/40 text-center min-h-[200px] flex flex-col justify-center">
+              <div className="relative h-16 overflow-hidden mb-6">
+                <div
+                  key={currentStep}
+                  className="absolute inset-0 flex items-center justify-center animate-fade-in"
+                >
+                  <p className="text-2xl font-medium text-zeniks-purple">
+                    {steps[currentStep]}
+                  </p>
+                </div>
               </div>
               
-              {currentStep === steps.length - 1 && (
-                <div className="mt-6">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-zeniks-purple mx-auto"></div>
-                </div>
-              )}
+              <div className="mt-6">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-zeniks-purple mx-auto"></div>
+              </div>
             </div>
           )}
 
