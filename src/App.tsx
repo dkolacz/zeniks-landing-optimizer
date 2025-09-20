@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import Index from "@/pages/Index";
 import About from "@/pages/About";
 import Blog from "@/pages/Blog";
+import Product from "@/pages/Product";
 import OptimizeRentalListing from "@/pages/OptimizeRentalListing";
 import LeverageGuestReviews from "@/pages/LeverageGuestReviews";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
@@ -16,6 +17,7 @@ function App() {
         <Route path="/" element={<Index />} />
         <Route path="/about" element={<About />} />
         <Route path="/blog" element={<Blog />} />
+        <Route path="/product/:listingId" element={<Product />} />
         <Route path="/blog/optimize-rental-listing" element={<OptimizeRentalListing />} />
         <Route path="/blog/leverage-guest-reviews" element={<LeverageGuestReviews />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
