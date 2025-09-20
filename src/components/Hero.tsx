@@ -21,19 +21,11 @@ const Hero = () => {
   const [airbnbUrl, setAirbnbUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [urlError, setUrlError] = useState("");
-  const [reportCount, setReportCount] = useState(27); // Start with 27 as baseline
+  
   const [showSampleModal, setShowSampleModal] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Simulate report count increasing over time
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setReportCount(prev => Math.min(prev + 1, 100));
-    }, 300000); // Increase every 5 minutes
-
-    return () => clearInterval(interval);
-  }, []);
 
   // Validation functions
   const validateUrl = (url: string) => {
@@ -124,8 +116,6 @@ const Hero = () => {
       // Trigger scraper in background (no await, fire and forget)
       triggerScraperInBackground(listingId, data[0].id);
       
-      // Increment report count for UI
-      setReportCount(prev => Math.min(prev + 1, 100));
       
       // Reset form and clear errors
       setAirbnbUrl("");
@@ -283,13 +273,6 @@ const Hero = () => {
                   </>
                 )}
               </button>
-               
-               {/* Progress indicator moved below CTA */}
-               <div className="mt-4 text-center">
-                 <p className="text-sm text-zeniks-gray-dark">
-                   ✅ {reportCount} / 100 free AI reports claimed
-                 </p>
-               </div>
               
                {/* Sample Report Preview */}
                <div className="mt-6 flex flex-col items-center">
