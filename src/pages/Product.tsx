@@ -147,20 +147,70 @@ const Product = () => {
 
           {showResults && resultData && (
             <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/40">
-              <h2 className="text-2xl font-bold text-zeniks-purple mb-6 text-center">
-                🎉 Your Results Are Ready!
-              </h2>
-              
               {resultData.error ? (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <p className="text-red-700 font-medium">Error:</p>
                   <p className="text-red-600">{resultData.error}</p>
                 </div>
               ) : (
-                <div className="bg-gray-50 rounded-lg p-4 overflow-auto">
-                  <pre className="text-sm text-gray-800 whitespace-pre-wrap">
-                    {JSON.stringify(resultData, null, 2)}
-                  </pre>
+                <div className="grid lg:grid-cols-2 gap-8">
+                  {/* Left Column - Listing Details */}
+                  <div className="space-y-6">
+                    {/* Title */}
+                    <h1 className="text-3xl md:text-4xl font-bold text-zeniks-purple leading-tight">
+                      {resultData.details?.title || 'Your Airbnb Listing'}
+                    </h1>
+                    
+                    {/* Main Image */}
+                    {resultData.details?.photos && resultData.details.photos.length > 0 && (
+                      <div className="rounded-xl overflow-hidden shadow-lg">
+                        <img 
+                          src={resultData.details.photos[0].url} 
+                          alt="Listing main photo"
+                          className="w-full h-64 md:h-80 object-cover"
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Highlight Text */}
+                    <div className="bg-gradient-to-r from-zeniks-purple/10 to-zeniks-blue/10 rounded-lg p-6 border border-zeniks-purple/20">
+                      <p className="text-lg text-zeniks-purple font-medium">
+                        ✨ Your listing has strong potential for optimization. Unlock detailed insights now.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Right Column - CTA Card */}
+                  <div className="lg:sticky lg:top-8 lg:h-fit">
+                    <div className="bg-white rounded-xl shadow-xl border border-gray-200 p-6 space-y-6">
+                      <div className="text-center space-y-2">
+                        <h2 className="text-2xl font-bold text-zeniks-purple">
+                          Get Your Full Optimization Report
+                        </h2>
+                        <p className="text-zeniks-gray-dark">
+                          For just $19.90 you'll receive a personalized, AI-powered analysis of your Airbnb listing.
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <label htmlFor="email" className="block text-sm font-medium text-zeniks-gray-dark mb-2">
+                            Email Address
+                          </label>
+                          <input
+                            type="email"
+                            id="email"
+                            placeholder="Enter your email address"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-zeniks-purple focus:border-transparent transition-colors"
+                          />
+                        </div>
+                        
+                        <button className="w-full bg-zeniks-purple hover:bg-zeniks-purple/90 text-white font-bold py-4 px-6 rounded-lg text-lg transition-colors shadow-lg hover:shadow-xl">
+                          Request Report – $19.90
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
