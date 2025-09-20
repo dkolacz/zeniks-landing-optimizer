@@ -17,6 +17,8 @@ export type Database = {
       requests: {
         Row: {
           created_at: string
+          data: Json | null
+          fetched_at: string | null
           id: string
           listing_id: string
           status: Database["public"]["Enums"]["request_status"]
@@ -24,6 +26,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          data?: Json | null
+          fetched_at?: string | null
           id?: string
           listing_id: string
           status?: Database["public"]["Enums"]["request_status"]
@@ -31,6 +35,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          data?: Json | null
+          fetched_at?: string | null
           id?: string
           listing_id?: string
           status?: Database["public"]["Enums"]["request_status"]

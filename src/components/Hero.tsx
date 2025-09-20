@@ -138,6 +138,72 @@ const Hero = () => {
 
       console.log('Data saved successfully:', data);
       
+      // Immediately call the scraper API
+      try {
+        console.log('Calling scraper API for listing_id:', listingId);
+        
+        const scraperResponse = await fetch('https://zeniks.onrender.com/scrape', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ listing_id: listingId }),
+        });
+
+        console.log('Scraper API response status:', scraperResponse.status);
+        
+        if (scraperResponse.ok) {
+          const scraperData = await scraperResponse.json();
+          console.log('Scraper data received:', scraperData);
+          
+          // Update the request with the fetched data
+          const { error: updateError } = await supabase
+            .from('requests')
+            .update({
+              data: scraperData,
+              fetched_at: new Date().toISOString(),
+              status: 'done'
+            })
+            .eq('id', data[0].id);
+
+          if (updateError) {
+            console.error('Error updating request with data:', updateError);
+          } else {
+            console.log('Request updated successfully with scraped data');
+          }
+        } else {
+          // Update status to failed if API call failed
+          const { error: updateError } = await supabase
+            .from('requests')
+            .update({
+              fetched_at: new Date().toISOString(),
+              status: 'failed'
+            })
+            .eq('id', data[0].id);
+
+          if (updateError) {
+            console.error('Error updating request status to failed:', updateError);
+          }
+          
+          console.error('Scraper API failed with status:', scraperResponse.status);
+        }
+      } catch (scraperError) {
+        console.error('Error calling scraper API:', scraperError);
+        
+        // Update status to failed if there's an exception
+        const { error: updateError } = await supabase
+          .from('requests')
+          .update({
+            fetched_at: new Date().toISOString(),
+            status: 'failed'
+          })
+          .eq('id', data[0].id);
+
+        if (updateError) {
+          console.error('Error updating request status to failed:', updateError);
+        }
+      }
+      
       // Increment report count for UI
       setReportCount(prev => Math.min(prev + 1, 100));
       
