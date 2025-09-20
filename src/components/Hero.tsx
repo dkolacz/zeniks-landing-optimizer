@@ -114,7 +114,13 @@ const Hero = () => {
       
       // Immediately call the scraper API
       try {
-        console.log('Calling scraper API for listing_id:', listingId);
+        console.log('=== SCRAPER API CALL START ===');
+        console.log('URL:', 'https://zeniks.onrender.com/scrape');
+        console.log('listing_id:', listingId);
+        console.log('Request body:', JSON.stringify({ listing_id: listingId }));
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
         
         const scraperResponse = await fetch('https://zeniks.onrender.com/scrape', {
           method: 'POST',
@@ -122,9 +128,15 @@ const Hero = () => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ listing_id: listingId }),
+          signal: controller.signal
         });
 
-        console.log('Scraper API response status:', scraperResponse.status);
+        clearTimeout(timeoutId);
+        
+        console.log('=== SCRAPER API RESPONSE ===');
+        console.log('Response status:', scraperResponse.status);
+        console.log('Response statusText:', scraperResponse.statusText);
+        console.log('Response headers:', Object.fromEntries(scraperResponse.headers.entries()));
         
         if (scraperResponse.ok) {
           const scraperData = await scraperResponse.json();
@@ -146,6 +158,16 @@ const Hero = () => {
             console.log('Request updated successfully with scraped data');
           }
         } else {
+          const errorText = await scraperResponse.text();
+          console.error('Scraper API failed with status:', scraperResponse.status);
+          console.error('Error response body:', errorText);
+          
+          toast({
+            title: "API Error",
+            description: `Scraper API returned status ${scraperResponse.status}: ${errorText}`,
+            variant: "destructive",
+          });
+          
           // Update status to failed if API call failed
           const { error: updateError } = await supabase
             .from('requests')
@@ -158,11 +180,27 @@ const Hero = () => {
           if (updateError) {
             console.error('Error updating request status to failed:', updateError);
           }
-          
-          console.error('Scraper API failed with status:', scraperResponse.status);
         }
       } catch (scraperError) {
-        console.error('Error calling scraper API:', scraperError);
+        console.error('=== SCRAPER API ERROR ===');
+        console.error('Error type:', scraperError.constructor.name);
+        console.error('Error message:', scraperError.message);
+        console.error('Full error:', scraperError);
+        
+        if (scraperError.name === 'AbortError') {
+          console.error('Request timed out after 30 seconds');
+          toast({
+            title: "Request Timeout",
+            description: "The API request timed out after 30 seconds. Please try again.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Network Error", 
+            description: `Failed to connect to scraper API: ${scraperError.message}`,
+            variant: "destructive",
+          });
+        }
         
         // Update status to failed if there's an exception
         const { error: updateError } = await supabase
