@@ -46,24 +46,13 @@ const Hero = () => {
       }
     };
   }, [showSuccessDialog]);
-  // Fetch current report count on component mount
+  // Simulate report count increasing over time
   useEffect(() => {
-    const fetchReportCount = async () => {
-      try {
-        const { count, error } = await supabase
-          .from('report_requests')
-          .select('*', { count: 'exact', head: true });
-        
-        if (!error && count !== null) {
-          // Use the database count, but ensure it's at least 27 for urgency
-          setReportCount(Math.max(count, 27));
-        }
-      } catch (error) {
-        console.error('Error fetching report count:', error);
-      }
-    };
+    const interval = setInterval(() => {
+      setReportCount(prev => Math.min(prev + 1, 100));
+    }, 300000); // Increase every 5 minutes
 
-    fetchReportCount();
+    return () => clearInterval(interval);
   }, []);
 
   // Validation functions
@@ -106,45 +95,13 @@ const Hero = () => {
     console.log('Form submission started with:', { airbnbUrl });
     
     try {
-      // Store data in Supabase
-      console.log('About to call Supabase...');
+      console.log('Processing request...');
       
-      const insertData = {
-        airbnb_url: airbnbUrl.trim(),
-        email: null
-      };
+      // Simulate processing time
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      console.log('Insert data:', insertData);
-      
-      const { data, error } = await supabase
-        .from('report_requests')
-        .insert([insertData])
-        .select();
-
-      console.log('Supabase response received:', { data, error });
-
-      if (error) {
-        console.error('Supabase error:', error);
-        toast({
-          title: "Database Error",
-          description: error.message || "Failed to save your request. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      console.log('Data saved successfully:', data);
-
-      console.log('About to show success dialog...');
-      
-      // Refresh report counter from database to get the updated count
-      const { count: updatedCount } = await supabase
-        .from('report_requests')
-        .select('*', { count: 'exact', head: true });
-      
-      if (updatedCount !== null) {
-        setReportCount(Math.max(updatedCount, 27));
-      }
+      // Increment report count for UI
+      setReportCount(prev => Math.min(prev + 1, 100));
       
       // Show success dialog
       setShowSuccessDialog(true);

@@ -14,63 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      airbnb_analyses: {
-        Row: {
-          created_at: string
-          error_message: string | null
-          id: string
-          listing_url: string
-          raw_response: string | null
-          response_data: Json | null
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          error_message?: string | null
-          id?: string
-          listing_url: string
-          raw_response?: string | null
-          response_data?: Json | null
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          error_message?: string | null
-          id?: string
-          listing_url?: string
-          raw_response?: string | null
-          response_data?: Json | null
-          status?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      report_requests: {
-        Row: {
-          airbnb_url: string
-          created_at: string
-          email: string | null
-          id: string
-          updated_at: string
-        }
-        Insert: {
-          airbnb_url: string
-          created_at?: string
-          email?: string | null
-          id?: string
-          updated_at?: string
-        }
-        Update: {
-          airbnb_url?: string
-          created_at?: string
-          email?: string | null
-          id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       results: {
         Row: {
           created_at: string | null
