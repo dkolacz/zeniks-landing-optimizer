@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.trigger-scraper]
 verify_jwt = false
+
+[functions.normalize]
+verify_jwt = false
