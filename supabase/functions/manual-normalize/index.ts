@@ -18,12 +18,12 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get all results that haven't been normalized yet
+    // Get recent results (we'll skip those already in listings)
     const { data: results, error: fetchError } = await supabase
       .from('results')
-      .select('id')
-      .not('listing_id', 'in', `(SELECT listing_id FROM listings)`)
-      .order('id', { ascending: false });
+      .select('id, listing_id')
+      .order('id', { ascending: false })
+      .limit(100);
 
     if (fetchError) {
       console.error('Error fetching unnormalized results:', fetchError);
@@ -32,31 +32,39 @@ serve(async (req) => {
 
     console.log(`Found ${results?.length || 0} results to normalize`);
 
-    // Normalize each result
+    // Normalize each result if not already in listings
     const normalizedResults = [];
     for (const result of results || []) {
       try {
-        // Call the normalize function for each result
-        const response = await fetch(`${supabaseUrl}/functions/v1/normalize`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${supabaseServiceKey}`
-          },
-          body: JSON.stringify({ result_id: result.id })
+        // Skip if listing already exists
+        const { data: existing, error: existErr } = await supabase
+          .from('listings')
+          .select('id')
+          .eq('listing_id', String(result.listing_id))
+          .maybeSingle();
+
+        if (existErr) {
+          console.warn(`Check existing listing error for ${result.listing_id}:`, existErr);
+        }
+        if (existing) {
+          normalizedResults.push({ result_id: result.id, listing_id: result.listing_id, skipped: true, reason: 'already_exists' });
+          continue;
+        }
+
+        const { data, error } = await supabase.functions.invoke('normalize', {
+          body: { result_id: result.id },
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          normalizedResults.push({ result_id: result.id, success: true, listing_id: data.listing_id });
-          console.log(`Successfully normalized result ${result.id}`);
+        if (error) {
+          console.error(`Failed to normalize result ${result.id}:`, error);
+          normalizedResults.push({ result_id: result.id, success: false, error: error.message });
         } else {
-          console.error(`Failed to normalize result ${result.id}:`, await response.text());
-          normalizedResults.push({ result_id: result.id, success: false, error: await response.text() });
+          normalizedResults.push({ result_id: result.id, success: true, listing_id: data?.listing_id ?? null });
+          console.log(`Successfully normalized result ${result.id}`);
         }
       } catch (error) {
         console.error(`Error normalizing result ${result.id}:`, error);
-        normalizedResults.push({ result_id: result.id, success: false, error: error.message });
+        normalizedResults.push({ result_id: result.id, success: false, error: (error as Error).message });
       }
     }
 
