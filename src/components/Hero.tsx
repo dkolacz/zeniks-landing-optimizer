@@ -278,7 +278,7 @@ const Hero = () => {
               >
                 {isLoading ? "Processing..." : (
                   <>
-                    Get My Free Report 
+                    Get My AI Report
                     <span className="group-hover:translate-x-1 transition-transform duration-300">→</span>
                   </>
                 )}
