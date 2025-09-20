@@ -78,6 +78,12 @@ const Hero = () => {
     setUrlError(validateUrl(airbnbUrl));
   };
 
+  // Function to extract listing_id from Airbnb URL
+  const extractListingId = (url: string) => {
+    const match = url.match(/\/rooms\/(\d+)/);
+    return match ? match[1] : null;
+  };
+
   const handleAnalyze = async () => {
     console.log('Handle analyze called');
     
@@ -91,14 +97,46 @@ const Hero = () => {
       return;
     }
 
+    // Extract listing_id from URL
+    const listingId = extractListingId(airbnbUrl);
+    if (!listingId) {
+      setUrlError("Please enter a valid Airbnb listing URL with a room ID");
+      return;
+    }
+
     setIsLoading(true);
-    console.log('Form submission started with:', { airbnbUrl });
+    console.log('Form submission started with:', { airbnbUrl, listingId });
     
     try {
-      console.log('Processing request...');
+      // Store data in Supabase requests table
+      console.log('About to call Supabase...');
       
-      // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const insertData = {
+        listing_id: listingId,
+        url: airbnbUrl.trim(),
+        status: 'pending' as const
+      };
+      
+      console.log('Insert data:', insertData);
+      
+      const { data, error } = await supabase
+        .from('requests')
+        .insert([insertData])
+        .select();
+
+      console.log('Supabase response received:', { data, error });
+
+      if (error) {
+        console.error('Supabase error:', error);
+        toast({
+          title: "Database Error",
+          description: error.message || "Failed to save your request. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Data saved successfully:', data);
       
       // Increment report count for UI
       setReportCount(prev => Math.min(prev + 1, 100));

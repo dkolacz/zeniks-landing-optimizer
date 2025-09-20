@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      requests: {
+        Row: {
+          created_at: string
+          id: string
+          listing_id: string
+          status: Database["public"]["Enums"]["request_status"]
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          listing_id: string
+          status?: Database["public"]["Enums"]["request_status"]
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          listing_id?: string
+          status?: Database["public"]["Enums"]["request_status"]
+          url?: string
+        }
+        Relationships: []
+      }
       results: {
         Row: {
           created_at: string | null
@@ -52,7 +76,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      request_status: "pending" | "processing" | "done" | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -179,6 +203,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      request_status: ["pending", "processing", "done", "failed"],
+    },
   },
 } as const
