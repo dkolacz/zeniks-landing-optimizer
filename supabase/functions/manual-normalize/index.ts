@@ -18,10 +18,11 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get recent results (we'll skip those already in listings)
+    // Get recent results that have data
     const { data: results, error: fetchError } = await supabase
       .from('results')
       .select('id, listing_id')
+      .not('data', 'is', null)
       .order('id', { ascending: false })
       .limit(100);
 
