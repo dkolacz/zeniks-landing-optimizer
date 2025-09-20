@@ -141,19 +141,43 @@ const Hero = () => {
       // Call the scraper API via edge function
       console.log('Calling scraper API...');
       try {
-        const { data: scraperData, error: scraperError } = await supabase.functions.invoke('trigger-scraper', {
+        console.log('=== Invoking edge function with listing_id:', listingId);
+        const invokeResult = await supabase.functions.invoke('trigger-scraper', {
           body: { listing_id: listingId }
         });
+        
+        console.log('=== Edge function raw result:', invokeResult);
 
-        if (scraperError) {
-          console.error('Scraper API error:', scraperError);
-          // Don't show error to user as the main request was successful
+        if (invokeResult.error) {
+          console.error('=== Scraper API error details ===', {
+            error: invokeResult.error,
+            message: invokeResult.error?.message,
+            status: invokeResult.error?.status
+          });
+          // Show error to user since scraper is critical
+          toast({
+            title: "Scraper Error",
+            description: `Failed to trigger scraper: ${invokeResult.error?.message || 'Unknown error'}`,
+            variant: "destructive",
+          });
         } else {
-          console.log('Scraper API called successfully:', scraperData);
+          console.log('=== Scraper API called successfully ===', invokeResult.data);
+          toast({
+            title: "Success", 
+            description: "Request submitted and scraper triggered successfully!",
+          });
         }
       } catch (scraperError) {
-        console.error('Failed to call scraper API:', scraperError);
-        // Don't show error to user as the main request was successful
+        console.error('=== Failed to call scraper API - catch block ===', {
+          error: scraperError,
+          message: scraperError?.message,
+          stack: scraperError?.stack
+        });
+        toast({
+          title: "Scraper Error",
+          description: `Failed to trigger scraper: ${scraperError?.message || 'Unknown error'}`,
+          variant: "destructive",
+        });
       }
       
       // Increment report count for UI
