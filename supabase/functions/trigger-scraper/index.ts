@@ -29,11 +29,15 @@ serve(async (req) => {
     console.log('Scraper API response status:', scraperResponse.status);
     
     if (!scraperResponse.ok) {
-      throw new Error(`Scraper API returned ${scraperResponse.status}`);
+      const errorText = await scraperResponse.text();
+      console.error('Scraper API error body:', errorText);
+      throw new Error(`Scraper API returned ${scraperResponse.status}: ${errorText}`);
     }
 
+    const data = await scraperResponse.json();
+
     return new Response(
-      JSON.stringify({ success: true, message: 'Scraper triggered successfully' }),
+      JSON.stringify({ success: true, data }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,

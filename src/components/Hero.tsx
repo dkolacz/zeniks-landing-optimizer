@@ -112,108 +112,64 @@ const Hero = () => {
 
       console.log('Data saved successfully:', data);
       
-      // Immediately call the scraper API
+      // Immediately call the scraper via Edge Function (avoids CORS/timeouts)
       try {
-        console.log('=== SCRAPER API CALL START ===');
-        console.log('URL:', 'https://zeniks.onrender.com/scrape');
-        console.log('listing_id:', listingId);
-        console.log('Request body:', JSON.stringify({ listing_id: listingId }));
-        
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-        
-        const scraperResponse = await fetch('https://zeniks.onrender.com/scrape', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ listing_id: listingId }),
-          signal: controller.signal
+        console.log('=== SCRAPER EDGE INVOKE START ===');
+        const { data: fnData, error: fnError } = await supabase.functions.invoke('trigger-scraper', {
+          body: { listing_id: listingId },
         });
+        console.log('Edge function response:', { fnData, fnError });
 
-        clearTimeout(timeoutId);
-        
-        console.log('=== SCRAPER API RESPONSE ===');
-        console.log('Response status:', scraperResponse.status);
-        console.log('Response statusText:', scraperResponse.statusText);
-        console.log('Response headers:', Object.fromEntries(scraperResponse.headers.entries()));
-        
-        if (scraperResponse.ok) {
-          const scraperData = await scraperResponse.json();
-          console.log('Scraper data received:', scraperData);
-          
-          // Update the request with the fetched data
+        if (fnError) {
+          console.error('Edge function error:', fnError);
+          toast({
+            title: 'API Error',
+            description: fnError.message || 'Failed to invoke scraper function',
+            variant: 'destructive',
+          });
+          // Update status to failed
           const { error: updateError } = await supabase
             .from('requests')
-            .update({
-              data: scraperData,
-              fetched_at: new Date().toISOString(),
-              status: 'done'
-            })
+            .update({ fetched_at: new Date().toISOString(), status: 'failed' })
             .eq('id', data[0].id);
-
+          if (updateError) console.error('Error updating request status to failed:', updateError);
+        } else if (!fnData?.success) {
+          console.error('Scraper function returned unsuccessful response:', fnData);
+          toast({
+            title: 'API Error',
+            description: typeof fnData?.error === 'string' ? fnData.error : 'Scraper failed',
+            variant: 'destructive',
+          });
+          const { error: updateError } = await supabase
+            .from('requests')
+            .update({ fetched_at: new Date().toISOString(), status: 'failed' })
+            .eq('id', data[0].id);
+          if (updateError) console.error('Error updating request status to failed:', updateError);
+        } else {
+          const scraperData = fnData.data;
+          console.log('Scraper data received from edge:', scraperData);
+          const { error: updateError } = await supabase
+            .from('requests')
+            .update({ data: scraperData, fetched_at: new Date().toISOString(), status: 'done' })
+            .eq('id', data[0].id);
           if (updateError) {
             console.error('Error updating request with data:', updateError);
           } else {
             console.log('Request updated successfully with scraped data');
           }
-        } else {
-          const errorText = await scraperResponse.text();
-          console.error('Scraper API failed with status:', scraperResponse.status);
-          console.error('Error response body:', errorText);
-          
-          toast({
-            title: "API Error",
-            description: `Scraper API returned status ${scraperResponse.status}: ${errorText}`,
-            variant: "destructive",
-          });
-          
-          // Update status to failed if API call failed
-          const { error: updateError } = await supabase
-            .from('requests')
-            .update({
-              fetched_at: new Date().toISOString(),
-              status: 'failed'
-            })
-            .eq('id', data[0].id);
-
-          if (updateError) {
-            console.error('Error updating request status to failed:', updateError);
-          }
         }
-      } catch (scraperError) {
-        console.error('=== SCRAPER API ERROR ===');
-        console.error('Error type:', scraperError.constructor.name);
-        console.error('Error message:', scraperError.message);
-        console.error('Full error:', scraperError);
-        
-        if (scraperError.name === 'AbortError') {
-          console.error('Request timed out after 30 seconds');
-          toast({
-            title: "Request Timeout",
-            description: "The API request timed out after 30 seconds. Please try again.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Network Error", 
-            description: `Failed to connect to scraper API: ${scraperError.message}`,
-            variant: "destructive",
-          });
-        }
-        
-        // Update status to failed if there's an exception
+      } catch (scraperError: any) {
+        console.error('=== EDGE INVOKE ERROR ===', scraperError);
+        toast({
+          title: 'Network Error',
+          description: `Failed to reach edge function: ${scraperError?.message || scraperError}`,
+          variant: 'destructive',
+        });
         const { error: updateError } = await supabase
           .from('requests')
-          .update({
-            fetched_at: new Date().toISOString(),
-            status: 'failed'
-          })
+          .update({ fetched_at: new Date().toISOString(), status: 'failed' })
           .eq('id', data[0].id);
-
-        if (updateError) {
-          console.error('Error updating request status to failed:', updateError);
-        }
+        if (updateError) console.error('Error updating request status to failed:', updateError);
       }
       
       // Increment report count for UI
