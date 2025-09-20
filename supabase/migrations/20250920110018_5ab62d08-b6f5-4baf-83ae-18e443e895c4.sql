@@ -1,2 +1,0 @@
--- Set up the service role key using a different approach
-ALTER DATABASE postgres SET app.settings.service_role_key = (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'SUPABASE_SERVICE_ROLE_KEY');

@@ -8,7 +8,6 @@ import Pricing from "@/components/Pricing";
 import Testimonials from "@/components/Testimonials";
 import FAQ from "@/components/FAQ";
 import Footer from "@/components/Footer";
-import { TestNormalize } from "@/components/TestNormalize";
 
 const Index = () => {
   const location = useLocation();
@@ -32,9 +31,6 @@ const Index = () => {
     <div className="min-h-screen bg-zeniks-gray-light">
       <Navbar />
       <Hero />
-      <div className="container mx-auto px-4 py-8">
-        <TestNormalize />
-      </div>
       <HowItWorks />
       <Benefits />
       <Pricing />

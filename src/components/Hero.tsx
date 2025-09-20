@@ -138,50 +138,12 @@ const Hero = () => {
 
       console.log('Data saved successfully:', data);
       
-      // Call the scraper API via edge function
-      console.log('Calling scraper API...');
-      try {
-        console.log('=== Invoking edge function with listing_id:', listingId);
-        const invokeResult = await supabase.functions.invoke('trigger-scraper', {
-          body: { listing_id: listingId }
-        });
-        
-        console.log('=== Edge function raw result:', invokeResult);
-
-        if (invokeResult.error) {
-          console.error('=== Scraper API error details ===', {
-            error: invokeResult.error,
-            message: invokeResult.error?.message,
-            status: invokeResult.error?.status
-          });
-          // Show error to user since scraper is critical
-          toast({
-            title: "Scraper Error",
-            description: `Failed to trigger scraper: ${invokeResult.error?.message || 'Unknown error'}`,
-            variant: "destructive",
-          });
-        } else {
-          console.log('=== Scraper API called successfully ===', invokeResult.data);
-          toast({
-            title: "Success", 
-            description: "Request submitted and scraper triggered successfully!",
-          });
-        }
-      } catch (scraperError) {
-        console.error('=== Failed to call scraper API - catch block ===', {
-          error: scraperError,
-          message: scraperError?.message,
-          stack: scraperError?.stack
-        });
-        toast({
-          title: "Scraper Error",
-          description: `Failed to trigger scraper: ${scraperError?.message || 'Unknown error'}`,
-          variant: "destructive",
-        });
-      }
-      
       // Increment report count for UI
       setReportCount(prev => Math.min(prev + 1, 100));
+      
+      // Show success dialog
+      setShowSuccessDialog(true);
+      console.log('Success dialog opened');
 
       // Reset form and clear errors
       setAirbnbUrl("");
