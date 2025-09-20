@@ -138,6 +138,24 @@ const Hero = () => {
 
       console.log('Data saved successfully:', data);
       
+      // Call the scraper API via edge function
+      console.log('Calling scraper API...');
+      try {
+        const { data: scraperData, error: scraperError } = await supabase.functions.invoke('trigger-scraper', {
+          body: { listing_id: listingId }
+        });
+
+        if (scraperError) {
+          console.error('Scraper API error:', scraperError);
+          // Don't show error to user as the main request was successful
+        } else {
+          console.log('Scraper API called successfully:', scraperData);
+        }
+      } catch (scraperError) {
+        console.error('Failed to call scraper API:', scraperError);
+        // Don't show error to user as the main request was successful
+      }
+      
       // Increment report count for UI
       setReportCount(prev => Math.min(prev + 1, 100));
       
