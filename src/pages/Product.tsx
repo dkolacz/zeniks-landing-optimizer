@@ -115,8 +115,8 @@ const Product = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-zeniks-gray-light via-white to-zeniks-blue/20">
       <Navbar />
-      <div className="pt-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
+      <div className="pt-20 pb-20 px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-160px)] flex flex-col justify-center">
+        <div className="max-w-4xl mx-auto w-full">
           <div className="text-center mb-8">
             <h1 className="text-3xl md:text-4xl font-bold text-zeniks-purple mb-4">
               Analyzing Your Listing
