@@ -125,7 +125,7 @@ const Hero = () => {
         });
 
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Edge invoke timeout')), 20000)
+          setTimeout(() => reject(new Error('Edge invoke timeout')), 60000)
         );
 
         const invokeResult: any = await Promise.race([invokePromise, timeoutPromise]);
@@ -140,16 +140,28 @@ const Hero = () => {
 
           const scraperData = fnData.data;
           console.log('Scraper data received from edge:', scraperData);
+          
+          // Show success toast
+          toast({
+            title: "Success!",
+            description: "Your listing has been analyzed successfully.",
+            variant: "default",
+          });
+          
           const { error: updateError } = await supabase
             .from('requests')
             .update({ data: scraperData, fetched_at: new Date().toISOString(), status: 'done' })
             .eq('id', data[0].id);
-          if (updateError) console.error('Error updating request with data:', updateError);
+          if (updateError) {
+            console.error('Error updating request with data:', updateError);
+          } else {
+            console.log('Request updated successfully with scraped data');
+          }
         } else {
           // Timed out -> fallback to direct fetch
           console.warn('Edge invoke timed out, falling back to direct fetch');
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 30000);
+          const timeoutId = setTimeout(() => controller.abort(), 60000);
           const resp = await fetch(`${SUPABASE_URL}/functions/v1/trigger-scraper`, {
             method: 'POST',
             headers: {
@@ -168,11 +180,24 @@ const Hero = () => {
           const fnData = await resp.json();
           if (!fnData?.success) throw new Error(typeof fnData?.error === 'string' ? fnData.error : 'Scraper failed');
           const scraperData = fnData.data;
+          console.log('Scraper data received from fallback:', scraperData);
+          
+          // Show success toast
+          toast({
+            title: "Success!",
+            description: "Your listing has been analyzed successfully.",
+            variant: "default",
+          });
+          
           const { error: updateError } = await supabase
             .from('requests')
             .update({ data: scraperData, fetched_at: new Date().toISOString(), status: 'done' })
             .eq('id', data[0].id);
-          if (updateError) console.error('Error updating request with data:', updateError);
+          if (updateError) {
+            console.error('Error updating request with data:', updateError);
+          } else {
+            console.log('Request updated successfully with scraped data via fallback');
+          }
         }
       } catch (scraperError: any) {
         console.error('=== SCRAPER CALL ERROR (EDGE + FALLBACK) ===', scraperError);
