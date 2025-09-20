@@ -182,10 +182,6 @@ const Hero = () => {
       
       // Increment report count for UI
       setReportCount(prev => Math.min(prev + 1, 100));
-      
-      // Show success dialog
-      setShowSuccessDialog(true);
-      console.log('Success dialog opened');
 
       // Reset form and clear errors
       setAirbnbUrl("");
