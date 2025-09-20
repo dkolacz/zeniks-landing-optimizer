@@ -20,6 +20,7 @@ export type Database = {
           id: string
           listing: Json
           listing_id: string
+          schema_version: string | null
           updated_at: string
         }
         Insert: {
@@ -27,6 +28,7 @@ export type Database = {
           id?: string
           listing: Json
           listing_id: string
+          schema_version?: string | null
           updated_at?: string
         }
         Update: {
@@ -34,7 +36,32 @@ export type Database = {
           id?: string
           listing?: Json
           listing_id?: string
+          schema_version?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      normalization_errors: {
+        Row: {
+          created_at: string
+          error_details: Json | null
+          error_message: string
+          id: string
+          result_id: number
+        }
+        Insert: {
+          created_at?: string
+          error_details?: Json | null
+          error_message: string
+          id?: string
+          result_id: number
+        }
+        Update: {
+          created_at?: string
+          error_details?: Json | null
+          error_message?: string
+          id?: string
+          result_id?: number
         }
         Relationships: []
       }
