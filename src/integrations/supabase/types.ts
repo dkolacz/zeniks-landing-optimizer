@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      listings: {
+        Row: {
+          created_at: string
+          id: string
+          listing: Json
+          listing_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          listing: Json
+          listing_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          listing?: Json
+          listing_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       requests: {
         Row: {
           created_at: string
