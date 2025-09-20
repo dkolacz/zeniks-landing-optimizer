@@ -110,7 +110,8 @@ const Hero = () => {
       console.log('About to call Supabase...');
       
       const insertData = {
-        airbnb_url: airbnbUrl.trim()
+        airbnb_url: airbnbUrl.trim(),
+        email: null
       };
       
       console.log('Insert data:', insertData);
