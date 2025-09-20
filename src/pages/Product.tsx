@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 
 const Product = () => {
   const { listingId } = useParams<{ listingId: string }>();
@@ -95,9 +94,9 @@ const Product = () => {
 
   if (!listingId) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-zeniks-gray-light via-white to-zeniks-blue/20">
+      <div className="h-screen overflow-hidden bg-gradient-to-br from-zeniks-gray-light via-white to-zeniks-blue/20">
         <Navbar />
-        <div className="pt-20 px-4 sm:px-6 lg:px-8">
+        <div className="pt-20 px-4 sm:px-6 lg:px-8 h-full flex items-center justify-center">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-2xl font-bold text-zeniks-purple mb-4">
               Error: No listing ID provided
@@ -107,16 +106,15 @@ const Product = () => {
             </p>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zeniks-gray-light via-white to-zeniks-blue/20">
+    <div className="h-screen overflow-hidden bg-gradient-to-br from-zeniks-gray-light via-white to-zeniks-blue/20">
       <Navbar />
-      <div className="pt-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
+      <div className="pt-20 px-4 sm:px-6 lg:px-8 h-full">
+        <div className="max-w-4xl mx-auto h-full flex flex-col justify-center">
           <div className="text-center mb-8">
             <h1 className="text-3xl md:text-4xl font-bold text-zeniks-purple mb-4">
               Analyzing Your Listing
@@ -167,7 +165,6 @@ const Product = () => {
           )}
         </div>
       </div>
-      <Footer />
     </div>
   );
 };
