@@ -40,7 +40,11 @@ serve(async (req) => {
     console.log('Raw data fetched, normalizing...');
     
     // 2. Transform raw → normalized schema
-    const normalized = normalizeListing(result.data);
+    const normalized = normalizeListing(result.data, result.listing_id);
+
+    if (!normalized?.listing || Object.keys(normalized.listing).length === 0) {
+      throw new Error('Normalization produced an empty listing object');
+    }
     
     // 3. Upsert into listings table with idempotency
     const { error: upsertError } = await supabase
@@ -103,8 +107,11 @@ serve(async (req) => {
   }
 });
 
-function normalizeListing(raw: any) {
-  const id = raw.id ?? raw.listing_id;
+function normalizeListing(raw: any, fallbackListingId?: string) {
+  const id = raw?.id ?? raw?.listing_id ?? fallbackListingId ?? null;
+  const stripHtml = (html?: string) =>
+    typeof html === 'string' ? html.replace(/<[^>]*>/g, '') : '';
+
   return {
     version: "v2",
     source: {
@@ -115,53 +122,53 @@ function normalizeListing(raw: any) {
     },
     listing: {
       id,
-      url: `https://www.airbnb.com/rooms/${id}`,
-      language: raw.language ?? "en",
-      title: raw.title ?? "",
+      url: id ? `https://www.airbnb.com/rooms/${id}` : "",
+      language: raw?.language ?? "en",
+      title: raw?.title ?? "",
       description: {
-        html: raw.description ?? "",
-        text: raw.description?.replace(/<[^>]*>/g, "") ?? "",
+        html: raw?.description ?? "",
+        text: stripHtml(raw?.description),
         sections: {
-          listing_description: raw.description ?? "",
-          space: raw.space ?? "",
-          guest_access: raw.guest_access ?? "",
-          other_notes: raw.other_notes ?? "",
-          neighbourhood: raw.neighbourhood ?? "",
-          getting_around: raw.getting_around ?? ""
+          listing_description: raw?.description ?? "",
+          space: raw?.space ?? "",
+          guest_access: raw?.guest_access ?? "",
+          other_notes: raw?.other_notes ?? "",
+          neighbourhood: raw?.neighbourhood ?? "",
+          getting_around: raw?.getting_around ?? ""
         }
       },
       property: {
-        room_type: raw.room_type ?? "",
-        property_type: raw.property_type ?? "",
-        home_tier: raw.home_tier ?? null,
-        is_guest_favorite: raw.is_guest_favorite ?? false,
-        capacity: raw.person_capacity ?? null,
-        bedrooms: raw.bedrooms ?? null,
-        beds: raw.beds ?? null,
-        baths: raw.baths ?? null
+        room_type: raw?.room_type ?? "",
+        property_type: raw?.property_type ?? "",
+        home_tier: raw?.home_tier ?? null,
+        is_guest_favorite: raw?.is_guest_favorite ?? false,
+        capacity: raw?.person_capacity ?? null,
+        bedrooms: raw?.bedrooms ?? null,
+        beds: raw?.beds ?? null,
+        baths: raw?.baths ?? null
       },
       host: {
-        id: raw.host?.id ?? "",
-        name: raw.host?.name ?? "",
-        is_superhost: raw.host?.is_super_host ?? false
+        id: raw?.host?.id ?? "",
+        name: raw?.host?.name ?? "",
+        is_superhost: raw?.host?.is_super_host ?? false
       },
       location: {
-        lat: raw.coordinates?.latitude ?? null,
-        lng: raw.coordinates?.longitude ?? null,
-        city: raw.city ?? "",
-        region: raw.region ?? "",
-        country: raw.country ?? ""
+        lat: raw?.coordinates?.latitude ?? null,
+        lng: raw?.coordinates?.longitude ?? null,
+        city: raw?.city ?? "",
+        region: raw?.region ?? "",
+        country: raw?.country ?? ""
       },
-      highlights: raw.highlights?.map((h: any) => ({
-        title: h.title,
-        subtitle: h.subtitle
+      highlights: raw?.highlights?.map((h: any) => ({
+        title: h?.title ?? "",
+        subtitle: h?.subtitle ?? ""
       })) ?? [],
-      amenities: (raw.amenities ?? []).map((cat: any) => ({
-        category: cat.title,
-        items: cat.values.map((v: any) => ({
-          title: v.title,
-          subtitle: v.subtitle ?? "",
-          available: v.available ?? true
+      amenities: (raw?.amenities ?? []).map((cat: any) => ({
+        category: cat?.title ?? "",
+        items: (cat?.values ?? []).map((v: any) => ({
+          title: v?.title ?? "",
+          subtitle: v?.subtitle ?? "",
+          available: v?.available ?? true
         }))
       })),
       house_rules: {
@@ -169,21 +176,21 @@ function normalizeListing(raw: any) {
         during_stay: extractHouseRules(raw, "During your stay"),
         before_leave: extractHouseRules(raw, "Before you leave"),
         general: extractHouseRules(raw, "General"),
-        additional_text: raw.house_rules?.aditional ?? ""
+        additional_text: raw?.house_rules?.additional ?? raw?.house_rules?.aditional ?? ""
       },
-      images: (raw.images ?? []).map((img: any) => ({
-        title: img.title ?? "",
-        url: img.url ?? ""
+      images: (raw?.images ?? []).map((img: any) => ({
+        title: img?.title ?? "",
+        url: img?.url ?? ""
       })),
       ratings: {
-        accuracy: raw.rating?.accuracy ?? 0,
-        checkin: raw.rating?.checking ?? 0,
-        cleanliness: raw.rating?.cleanliness ?? 0,
-        communication: raw.rating?.communication ?? 0,
-        location: raw.rating?.location ?? 0,
-        value: raw.rating?.value ?? 0,
-        overall: raw.rating?.guest_satisfaction ?? null,
-        review_count: raw.rating?.review_count ?? 0
+        accuracy: raw?.rating?.accuracy ?? 0,
+        checkin: raw?.rating?.checkin ?? raw?.rating?.checking ?? 0,
+        cleanliness: raw?.rating?.cleanliness ?? 0,
+        communication: raw?.rating?.communication ?? 0,
+        location: raw?.rating?.location ?? 0,
+        value: raw?.rating?.value ?? 0,
+        overall: raw?.rating?.overall ?? raw?.rating?.guest_satisfaction ?? null,
+        review_count: raw?.rating?.review_count ?? 0
       }
     }
   };
