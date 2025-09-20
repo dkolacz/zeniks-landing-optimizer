@@ -250,10 +250,10 @@ const Hero = () => {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 sm:pt-20">
         <div className="text-center">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-zeniks-purple mb-6">
-            Your Personal AI Agent for Airbnb Success
+            Zeniks: Your AI Agent for Airbnb Success
           </h1>
           <p className="text-xl md:text-2xl text-zeniks-gray-dark max-w-3xl mx-auto mb-8">
-            Zeniks acts like an Airbnb optimization consultant — analyzing your photos, reviews, amenities, and pricing — then delivers an instant, step-by-step report to help you book more guests.
+            Audits your listing, applies Airbnb’s official guidance, and delivers an instant optimization report — all for $19.90.
           </p>
           
           <div className="max-w-2xl mx-auto">
