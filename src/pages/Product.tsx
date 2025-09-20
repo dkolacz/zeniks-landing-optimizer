@@ -117,14 +117,16 @@ const Product = () => {
       <Navbar />
       <div className="pt-20 pb-20 px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-160px)] flex flex-col justify-center">
         <div className="max-w-4xl mx-auto w-full">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold text-zeniks-purple mb-4">
-              Analyzing Your Listing
-            </h1>
-            <p className="text-lg text-zeniks-gray-dark">
-              Listing ID: {listingId}
-            </p>
-          </div>
+          {!showResults && (
+            <div className="text-center mb-8">
+              <h1 className="text-3xl md:text-4xl font-bold text-zeniks-purple mb-4">
+                Analyzing Your Listing
+              </h1>
+              <p className="text-lg text-zeniks-gray-dark">
+                Listing ID: {listingId}
+              </p>
+            </div>
+          )}
 
           {isLoading && (
             <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/40 text-center min-h-[200px] flex flex-col justify-center">
