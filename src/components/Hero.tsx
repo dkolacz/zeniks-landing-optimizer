@@ -83,7 +83,10 @@ const Hero = () => {
       // Store data in Supabase requests table
       console.log('About to call Supabase...');
       
+      const requestId = crypto.randomUUID();
+      
       const insertData = {
+        id: requestId,
         listing_id: listingId,
         url: airbnbUrl.trim(),
         status: 'pending' as const
@@ -91,12 +94,11 @@ const Hero = () => {
       
       console.log('Insert data:', insertData);
       
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('requests')
-        .insert([insertData])
-        .select();
+        .insert([insertData]);
 
-      console.log('Supabase response received:', { data, error });
+      console.log('Supabase response received:', { error });
 
       if (error) {
         console.error('Supabase error:', error);
@@ -108,13 +110,13 @@ const Hero = () => {
         return;
       }
 
-      console.log('Data saved successfully:', data);
+      console.log('Data saved successfully for request:', requestId);
       
       // Redirect to product page immediately with listing_id
       navigate(`/product/${listingId}`);
       
       // Trigger scraper in background (no await, fire and forget)
-      triggerScraperInBackground(listingId, data[0].id);
+      triggerScraperInBackground(listingId, requestId);
       
       
       // Reset form and clear errors
