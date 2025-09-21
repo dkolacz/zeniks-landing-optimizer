@@ -1,65 +1,97 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Input } from "@/components/ui/input";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
-interface ListingData {
-  title: string | null;
-  first_photo: string | null;
-}
-
 const Product = () => {
   const { listingId } = useParams<{ listingId: string }>();
-  const [listingData, setListingData] = useState<ListingData | null>(null);
+  const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string>("");
-  const [email, setEmail] = useState("");
+  const [resultData, setResultData] = useState<any>(null);
+  const [showResults, setShowResults] = useState(false);
+
+  const steps = [
+    "🔍 Reading your listing data…",
+    "🏡 Checking the property details…",
+    "🖼️ Fetching photos…",
+    "⭐ Collecting guest reviews…",
+    "📊 Analyzing opportunities for improvement…",
+    "🚀 Finalizing your results…"
+  ];
+
+  // Function to check if API call is complete
+  const checkAPIStatus = async () => {
+    if (!listingId) return false;
+    
+    try {
+      const { data, error } = await supabase
+        .from('requests')
+        .select('*')
+        .eq('listing_id', listingId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error('Error checking API status:', error);
+        return false;
+      }
+
+      if (data && data.length > 0) {
+        const request = data[0];
+        if (request.status === 'done' && request.data) {
+          setResultData(request.data);
+          return true;
+        } else if (request.status === 'failed') {
+          setResultData({ error: 'API call failed' });
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error checking API status:', error);
+      return false;
+    }
+  };
 
   useEffect(() => {
-    const fetchListingData = async () => {
-      if (!listingId) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('results')
-          .select('data')
-          .eq('listing_id', listingId)
-          .order('inserted_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+    if (!listingId) return;
 
-        if (error) {
-          console.error('Error fetching listing data:', error);
-          setError('Failed to load listing data');
-          return;
+    // Start the step sequence
+    const stepInterval = setInterval(async () => {
+      if (currentStep < steps.length - 1) {
+        setCurrentStep(prev => prev + 1);
+      } else {
+        // We're at the last step, check if API is complete
+        const isComplete = await checkAPIStatus();
+        if (isComplete) {
+          clearInterval(stepInterval);
+          setIsLoading(false);
+          setShowResults(true);
         }
-
-        if (!data || !data.data) {
-          setError('No data found for this listing');
-          return;
-        }
-
-        // Extract title and first photo from the JSON data
-        const jsonData = data.data as any;
-        const title = jsonData.title || null;
-        const firstPhoto = jsonData.photos && jsonData.photos.length > 0 ? jsonData.photos[0].url : null;
-
-        setListingData({
-          title,
-          first_photo: firstPhoto
-        });
-      } catch (error) {
-        console.error('Error:', error);
-        setError('An error occurred while loading the data');
-      } finally {
-        setIsLoading(false);
+        // If not complete, keep showing the last message
       }
-    };
+    }, 2000);
 
-    fetchListingData();
-  }, [listingId]);
+    // Also check API status immediately and then every 3 seconds
+    const statusInterval = setInterval(async () => {
+      if (currentStep === steps.length - 1) {
+        const isComplete = await checkAPIStatus();
+        if (isComplete) {
+          clearInterval(stepInterval);
+          clearInterval(statusInterval);
+          setIsLoading(false);
+          setShowResults(true);
+        }
+      }
+    }, 3000);
+
+    return () => {
+      clearInterval(stepInterval);
+      clearInterval(statusInterval);
+    };
+  }, [listingId, currentStep, steps.length]);
 
   if (!listingId) {
     return (
@@ -83,83 +115,106 @@ const Product = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-zeniks-gray-light via-white to-zeniks-blue/20">
       <Navbar />
-      <div className="pt-20 pb-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto w-full">
+      <div className="pt-20 pb-20 px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-160px)] flex flex-col justify-center">
+        <div className="max-w-4xl mx-auto w-full">
+          {!showResults && (
+            <div className="text-center mb-8">
+              <h1 className="text-3xl md:text-4xl font-bold text-zeniks-purple mb-4">
+                Analyzing Your Listing
+              </h1>
+              <p className="text-lg text-zeniks-gray-dark">
+                Listing ID: {listingId}
+              </p>
+            </div>
+          )}
+
           {isLoading && (
             <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/40 text-center min-h-[200px] flex flex-col justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-zeniks-purple mx-auto mb-4"></div>
-              <p className="text-zeniks-purple font-medium">Loading listing data...</p>
-            </div>
-          )}
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-              <p className="text-red-700 font-medium">Error:</p>
-              <p className="text-red-600">{error}</p>
-            </div>
-          )}
-
-          {!isLoading && !error && listingData && (
-            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
-              {/* Left Column - Listing Preview */}
-              <div className="space-y-6">
-                {/* Title */}
-                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-zeniks-purple leading-tight">
-                  {listingData.title || 'Your Airbnb Listing'}
-                </h1>
-                
-                {/* Main Image */}
-                {listingData.first_photo && (
-                  <div className="rounded-xl overflow-hidden shadow-lg">
-                    <img 
-                      src={listingData.first_photo} 
-                      alt="Listing main photo"
-                      className="w-full h-64 md:h-80 object-cover"
-                    />
-                  </div>
-                )}
-                
-                {/* Highlight Text */}
-                <div className="bg-gradient-to-r from-zeniks-purple/10 to-zeniks-blue/10 rounded-lg p-6 border border-zeniks-purple/20">
-                  <p className="text-lg text-zeniks-purple font-medium">
-                    ✨ Your listing has strong potential for optimization. Unlock detailed insights now.
+              <div className="relative h-16 overflow-hidden mb-6">
+                <div
+                  key={currentStep}
+                  className="absolute inset-0 flex items-center justify-center animate-fade-in"
+                >
+                  <p className="text-2xl font-medium text-zeniks-purple">
+                    {steps[currentStep]}
                   </p>
                 </div>
               </div>
               
-              {/* Right Column - Email Capture Card */}
-              <div className="lg:sticky lg:top-8 lg:h-fit">
-                <div className="bg-white rounded-xl shadow-xl border border-gray-200 p-8 space-y-6">
-                  <div className="text-center space-y-3">
-                    <h2 className="text-2xl md:text-3xl font-bold text-zeniks-purple">
-                      Get Your Full Optimization Report
-                    </h2>
-                    <p className="text-zeniks-gray-dark text-lg">
-                      Receive an instant PDF report delivered straight to your email.
-                    </p>
+              <div className="mt-6">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-zeniks-purple mx-auto"></div>
+              </div>
+            </div>
+          )}
+
+          {showResults && resultData && (
+            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/40">
+              {resultData.error ? (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-red-700 font-medium">Error:</p>
+                  <p className="text-red-600">{resultData.error}</p>
+                </div>
+              ) : (
+                <div className="grid lg:grid-cols-2 gap-8">
+                  {/* Left Column - Listing Details */}
+                  <div className="space-y-6">
+                    {/* Title */}
+                    <h1 className="text-3xl md:text-4xl font-bold text-zeniks-purple leading-tight">
+                      {resultData.details?.title || 'Your Airbnb Listing'}
+                    </h1>
+                    
+                    {/* Main Image */}
+                    {resultData.details?.photos && resultData.details.photos.length > 0 && (
+                      <div className="rounded-xl overflow-hidden shadow-lg">
+                        <img 
+                          src={resultData.details.photos[0].url} 
+                          alt="Listing main photo"
+                          className="w-full h-64 md:h-80 object-cover"
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Highlight Text */}
+                    <div className="bg-gradient-to-r from-zeniks-purple/10 to-zeniks-blue/10 rounded-lg p-6 border border-zeniks-purple/20">
+                      <p className="text-lg text-zeniks-purple font-medium">
+                        ✨ Your listing has strong potential for optimization. Unlock detailed insights now.
+                      </p>
+                    </div>
                   </div>
                   
-                  <div className="space-y-4">
-                    <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-zeniks-gray-dark mb-2">
-                        Email Address
-                      </label>
-                      <Input
-                        type="email"
-                        id="email"
-                        placeholder="Enter your email address"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="h-12 text-base"
-                      />
+                  {/* Right Column - CTA Card */}
+                  <div className="lg:sticky lg:top-8 lg:h-fit">
+                    <div className="bg-white rounded-xl shadow-xl border border-gray-200 p-6 space-y-6">
+                      <div className="text-center space-y-2">
+                        <h2 className="text-2xl font-bold text-zeniks-purple">
+                          Get Your Full Optimization Report
+                        </h2>
+                        <p className="text-zeniks-gray-dark">
+                          For just $19.90 you'll receive a personalized, AI-powered analysis of your Airbnb listing.
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <label htmlFor="email" className="block text-sm font-medium text-zeniks-gray-dark mb-2">
+                            Email Address
+                          </label>
+                          <input
+                            type="email"
+                            id="email"
+                            placeholder="Enter your email address"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-zeniks-purple focus:border-transparent transition-colors"
+                          />
+                        </div>
+                        
+                        <button className="w-full bg-zeniks-purple hover:bg-zeniks-purple/90 text-white font-bold py-4 px-6 rounded-lg text-lg transition-colors shadow-lg hover:shadow-xl">
+                          Request Report – $19.90
+                        </button>
+                      </div>
                     </div>
-                    
-                    <button className="w-full bg-zeniks-purple hover:bg-zeniks-purple/90 text-white font-bold py-4 px-6 rounded-lg text-xl transition-colors shadow-lg hover:shadow-xl">
-                      Request Report – $19.90
-                    </button>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </div>
