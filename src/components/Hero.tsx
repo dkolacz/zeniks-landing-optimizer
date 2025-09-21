@@ -141,7 +141,7 @@ const Hero = () => {
       console.log('=== BACKGROUND SCRAPER START ===');
 
       const invokePromise = supabase.functions.invoke('trigger-scraper', {
-        body: { listing_id: listingId, request_id: requestId },
+        body: { listing_id: listingId },
       });
 
       const timeoutPromise = new Promise((_, reject) =>
@@ -161,8 +161,22 @@ const Hero = () => {
         const scraperData = fnData.data;
         console.log('Background scraper data received from edge:', scraperData);
         
-        // DB update handled in edge function with service role (bypasses RLS)
-        console.log('Background scrape succeeded; request will be updated server-side.');
+        // Update the requests table with the response data
+        const { data: updateData, error: updateError } = await supabase
+          .from('requests')
+          .update({ 
+            data: scraperData, 
+            fetched_at: new Date().toISOString(), 
+            status: 'done' 
+          })
+          .eq('id', requestId)
+          .select();
+
+        if (updateError) {
+          console.error('Background error updating request with data:', updateError);
+        } else {
+          console.log('Background request updated successfully with scraped data');
+        }
       } else {
         // Fallback to direct fetch
         console.warn('Background edge invoke timed out, falling back to direct fetch');
@@ -175,7 +189,7 @@ const Hero = () => {
             'Authorization': `Bearer ${SUPABASE_ANON}`,
             'apikey': SUPABASE_ANON,
           },
-          body: JSON.stringify({ listing_id: listingId, request_id: requestId }),
+          body: JSON.stringify({ listing_id: listingId }),
           signal: controller.signal,
         });
         clearTimeout(timeoutId);
@@ -188,12 +202,30 @@ const Hero = () => {
         const scraperData = fnData.data;
         console.log('Background scraper data received from fallback:', scraperData);
         
-        // DB update handled in edge function with service role (bypasses RLS)
-        console.log('Background scrape succeeded via fallback; request will be updated server-side.');
+        // Update the requests table with the response data
+        const { data: updateData, error: updateError } = await supabase
+          .from('requests')
+          .update({ 
+            data: scraperData, 
+            fetched_at: new Date().toISOString(), 
+            status: 'done' 
+          })
+          .eq('id', requestId)
+          .select();
+
+        if (updateError) {
+          console.error('Background error updating request with data:', updateError);
+        } else {
+          console.log('Background request updated successfully with scraped data via fallback');
+        }
       }
     } catch (scraperError: any) {
       console.error('=== BACKGROUND SCRAPER ERROR ===', scraperError);
-      // Edge function will mark the request as failed server-side
+      const { error: updateError } = await supabase
+        .from('requests')
+        .update({ fetched_at: new Date().toISOString(), status: 'failed' })
+        .eq('id', requestId);
+      if (updateError) console.error('Background error updating request status to failed:', updateError);
     }
   };
 
