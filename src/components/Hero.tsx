@@ -141,7 +141,7 @@ const Hero = () => {
       console.log('=== BACKGROUND SCRAPER START ===');
 
       const invokePromise = supabase.functions.invoke('trigger-scraper', {
-        body: { listing_id: listingId },
+        body: { listing_id: listingId, request_id: requestId },
       });
 
       const timeoutPromise = new Promise((_, reject) =>
@@ -161,22 +161,8 @@ const Hero = () => {
         const scraperData = fnData.data;
         console.log('Background scraper data received from edge:', scraperData);
         
-        // Update the requests table with the response data
-        const { data: updateData, error: updateError } = await supabase
-          .from('requests')
-          .update({ 
-            data: scraperData, 
-            fetched_at: new Date().toISOString(), 
-            status: 'done' 
-          })
-          .eq('id', requestId)
-          .select();
-
-        if (updateError) {
-          console.error('Background error updating request with data:', updateError);
-        } else {
-          console.log('Background request updated successfully with scraped data');
-        }
+        // DB update handled in edge function with service role (bypasses RLS)
+        console.log('Background scrape succeeded; request will be updated server-side.');
       } else {
         // Fallback to direct fetch
         console.warn('Background edge invoke timed out, falling back to direct fetch');
@@ -189,7 +175,7 @@ const Hero = () => {
             'Authorization': `Bearer ${SUPABASE_ANON}`,
             'apikey': SUPABASE_ANON,
           },
-          body: JSON.stringify({ listing_id: listingId }),
+          body: JSON.stringify({ listing_id: listingId, request_id: requestId }),
           signal: controller.signal,
         });
         clearTimeout(timeoutId);
@@ -202,30 +188,12 @@ const Hero = () => {
         const scraperData = fnData.data;
         console.log('Background scraper data received from fallback:', scraperData);
         
-        // Update the requests table with the response data
-        const { data: updateData, error: updateError } = await supabase
-          .from('requests')
-          .update({ 
-            data: scraperData, 
-            fetched_at: new Date().toISOString(), 
-            status: 'done' 
-          })
-          .eq('id', requestId)
-          .select();
-
-        if (updateError) {
-          console.error('Background error updating request with data:', updateError);
-        } else {
-          console.log('Background request updated successfully with scraped data via fallback');
-        }
+        // DB update handled in edge function with service role (bypasses RLS)
+        console.log('Background scrape succeeded via fallback; request will be updated server-side.');
       }
     } catch (scraperError: any) {
       console.error('=== BACKGROUND SCRAPER ERROR ===', scraperError);
-      const { error: updateError } = await supabase
-        .from('requests')
-        .update({ fetched_at: new Date().toISOString(), status: 'failed' })
-        .eq('id', requestId);
-      if (updateError) console.error('Background error updating request status to failed:', updateError);
+      // Edge function will mark the request as failed server-side
     }
   };
 
