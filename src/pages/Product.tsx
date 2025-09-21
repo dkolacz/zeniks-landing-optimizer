@@ -8,8 +8,9 @@ const Product = () => {
   const { listingId } = useParams<{ listingId: string }>();
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [resultData, setResultData] = useState<any>(null);
+  const [listingData, setListingData] = useState<{ title: string; first_image_url: string } | null>(null);
   const [showResults, setShowResults] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const steps = [
     "🔍 Reading your listing data…",
@@ -20,16 +21,16 @@ const Product = () => {
     "🚀 Finalizing your results…"
   ];
 
-  // Function to check if API call is complete
+  // Function to check if API call is complete and fetch listing data
   const checkAPIStatus = async () => {
     if (!listingId) return false;
     
     try {
       const { data, error } = await supabase
         .from('requests')
-        .select('*')
+        .select('data, status')
         .eq('listing_id', listingId)
-        .order('created_at', { ascending: false })
+        .order('fetched_at', { ascending: false })
         .limit(1);
 
       if (error) {
@@ -40,10 +41,20 @@ const Product = () => {
       if (data && data.length > 0) {
         const request = data[0];
         if (request.status === 'done' && request.data) {
-          setResultData(request.data);
-          return true;
+          // Extract title and first image URL from nested data structure
+          const requestData = request.data as any;
+          const title = requestData?.data?.details?.title;
+          const firstImageUrl = requestData?.data?.details?.images?.[0]?.url;
+          
+          if (title && firstImageUrl) {
+            setListingData({
+              title,
+              first_image_url: firstImageUrl
+            });
+            return true;
+          }
         } else if (request.status === 'failed') {
-          setResultData({ error: 'API call failed' });
+          setError('API call failed');
           return true;
         }
       }
@@ -147,32 +158,30 @@ const Product = () => {
             </div>
           )}
 
-          {showResults && resultData && (
+          {showResults && (
             <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/40">
-              {resultData.error ? (
+              {error ? (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <p className="text-red-700 font-medium">Error:</p>
-                  <p className="text-red-600">{resultData.error}</p>
+                  <p className="text-red-600">{error}</p>
                 </div>
-              ) : (
+              ) : listingData ? (
                 <div className="grid lg:grid-cols-2 gap-8">
                   {/* Left Column - Listing Details */}
                   <div className="space-y-6">
                     {/* Title */}
                     <h1 className="text-3xl md:text-4xl font-bold text-zeniks-purple leading-tight">
-                      {resultData.details?.title || 'Your Airbnb Listing'}
+                      {listingData.title}
                     </h1>
                     
                     {/* Main Image */}
-                    {resultData.details?.photos && resultData.details.photos.length > 0 && (
-                      <div className="rounded-xl overflow-hidden shadow-lg">
-                        <img 
-                          src={resultData.details.photos[0].url} 
-                          alt="Listing main photo"
-                          className="w-full h-64 md:h-80 object-cover"
-                        />
-                      </div>
-                    )}
+                    <div className="rounded-xl overflow-hidden shadow-lg">
+                      <img 
+                        src={listingData.first_image_url} 
+                        alt="Listing main photo"
+                        className="w-full h-64 md:h-80 object-cover"
+                      />
+                    </div>
                     
                     {/* Highlight Text */}
                     <div className="bg-gradient-to-r from-zeniks-purple/10 to-zeniks-blue/10 rounded-lg p-6 border border-zeniks-purple/20">
@@ -190,7 +199,7 @@ const Product = () => {
                           Get Your Full Optimization Report
                         </h2>
                         <p className="text-zeniks-gray-dark">
-                          For just $19.90 you'll receive a personalized, AI-powered analysis of your Airbnb listing.
+                          Receive an instant PDF report delivered straight to your email.
                         </p>
                       </div>
                       
@@ -214,7 +223,7 @@ const Product = () => {
                     </div>
                   </div>
                 </div>
-              )}
+              ) : null}
             </div>
           )}
         </div>
