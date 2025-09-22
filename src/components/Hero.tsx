@@ -147,7 +147,7 @@ const Hero = () => {
       });
 
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Edge invoke timeout')), 60000)
+        setTimeout(() => reject(new Error('Edge invoke timeout')), 180000)
       );
 
       const invokeResult: any = await Promise.race([invokePromise, timeoutPromise]);
@@ -169,7 +169,7 @@ const Hero = () => {
         // Fallback to direct fetch
         console.warn('Background edge invoke timed out, falling back to direct fetch');
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000);
+        const timeoutId = setTimeout(() => controller.abort(), 180000);
         const resp = await fetch(`${SUPABASE_URL}/functions/v1/trigger-scraper`, {
           method: 'POST',
           headers: {
