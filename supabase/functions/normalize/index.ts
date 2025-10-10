@@ -63,17 +63,29 @@ function stripHtmlTags(html: string): string {
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
-function parseDescriptionSections(htmlText: string): Record<string, string> {
+function parseDescriptionSections(htmlText: string, locationDescriptions: any[] = []): Record<string, string> {
   const sections: Record<string, string> = {
     listing_description: "",
     space: "",
     guest_access: "",
     other_notes: "",
+    neighbourhood: "",
+    getting_around: "",
   };
 
   if (!htmlText) return sections;
 
-  // Simple HTML parsing: find sections marked by <b> tags
+  // Extract neighbourhood and getting_around from location_descriptions
+  for (const loc of locationDescriptions || []) {
+    const title = (loc.title || "").toLowerCase();
+    if (title.includes("neighborhood") || title.includes("neighbourhood")) {
+      sections.neighbourhood = cleanText(loc.content || "");
+    } else if (title.includes("getting around")) {
+      sections.getting_around = cleanText(loc.content || "");
+    }
+  }
+
+  // Find all <b> tags with their positions
   const bTagRegex = /<b[^>]*>(.*?)<\/b>/gi;
   const matches = [...htmlText.matchAll(bTagRegex)];
 
@@ -85,54 +97,51 @@ function parseDescriptionSections(htmlText: string): Record<string, string> {
     return sections;
   }
 
-  // Text before first <b> tag
-  const firstBIndex = htmlText.search(/<b[^>]*>/i);
+  // Text before first <b> tag is listing_description
+  const firstBIndex = matches[0].index!;
   if (firstBIndex > 0) {
     sections.listing_description = cleanText(stripHtmlTags(htmlText.substring(0, firstBIndex)));
   }
 
-  // Process labeled sections
+  // Process each <b> tag and extract content until next <b> tag
   for (let i = 0; i < matches.length; i++) {
-    const innerOriginal = cleanText(stripHtmlTags(matches[i][1] || ""));
-    const label = innerOriginal.toLowerCase();
-
+    const label = cleanText(matches[i][1] || "").toLowerCase();
+    
+    // Start after the closing </b> tag
     const startIndex = matches[i].index! + matches[i][0].length;
+    // End at the next <b> tag or end of string
     const endIndex = i + 1 < matches.length ? matches[i + 1].index! : htmlText.length;
+    
     const content = cleanText(stripHtmlTags(htmlText.substring(startIndex, endIndex)));
 
-    console.log(`Processing section - Label: "${label}", Content length: ${content.length}`);
+    console.log(`Section "${label}" → content length: ${content.length}`);
 
-    // Determine section type with explicit priority to match Python behavior
-    let type: 'guest_access' | 'other_notes' | 'space' | null = null;
-    if (label.includes('guest access') || label.includes('guest interaction')) {
-      type = 'guest_access';
+    // Map label to section key
+    if (label.includes('space')) {
+      sections.space = content;
+      console.log(`✓ Assigned to space: ${content.substring(0, 60)}...`);
+    } else if (label.includes('guest access') || label.includes('guest interaction')) {
+      sections.guest_access = content;
+      console.log(`✓ Assigned to guest_access: ${content.substring(0, 60)}...`);
     } else if (
       label.includes('other things to note') ||
       label.includes('other things') ||
       label.includes('other notes')
     ) {
-      type = 'other_notes';
-    } else if (label.includes('space')) {
-      type = 'space';
-    }
-
-    if (type) {
-      if (!sections[type] && content) {
-        sections[type] = content;
-        console.log(`Assigned to ${type}: ${content.substring(0, 50)}...`);
-      } else {
-        console.log(`Skip assigning to ${type} (already set or empty content)`);
-      }
+      sections.other_notes = content;
+      console.log(`✓ Assigned to other_notes: ${content.substring(0, 60)}...`);
     } else {
-      console.log(`Label "${label}" did not match any known section`);
+      console.log(`⚠ Label "${label}" did not match any known section`);
     }
   }
 
   console.log('Final sections:', {
-    has_listing_description: !!sections.listing_description,
-    has_space: !!sections.space,
-    has_guest_access: !!sections.guest_access,
-    has_other_notes: !!sections.other_notes
+    listing_description: sections.listing_description.substring(0, 60),
+    space: sections.space.substring(0, 60),
+    guest_access: sections.guest_access.substring(0, 60),
+    other_notes: sections.other_notes.substring(0, 60),
+    neighbourhood: sections.neighbourhood.substring(0, 60),
+    getting_around: sections.getting_around.substring(0, 60),
   });
 
   return sections;
@@ -229,14 +238,12 @@ function normalizeListing(raw: any): any {
 
   // Description
   const descHtml = details.description || raw.description || "";
+  const locationDescriptions = details.location_descriptions || [];
+  
   listing.description = {
     html: descHtml,
     text: cleanText(stripHtmlTags(descHtml)),
-    sections: {
-      ...parseDescriptionSections(descHtml),
-      neighbourhood: "",
-      getting_around: "",
-    },
+    sections: parseDescriptionSections(descHtml, locationDescriptions),
   };
 
   // Property
