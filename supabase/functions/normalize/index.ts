@@ -77,6 +77,8 @@ function parseDescriptionSections(htmlText: string): Record<string, string> {
   const bTagRegex = /<b[^>]*>(.*?)<\/b>/gi;
   const matches = [...htmlText.matchAll(bTagRegex)];
 
+  console.log(`Found ${matches.length} section headers in description`);
+
   if (matches.length === 0) {
     // No sections, entire text is listing_description
     sections.listing_description = cleanText(stripHtmlTags(htmlText));
@@ -96,14 +98,29 @@ function parseDescriptionSections(htmlText: string): Record<string, string> {
     const endIndex = i + 1 < matches.length ? matches[i + 1].index! : htmlText.length;
     const content = cleanText(stripHtmlTags(htmlText.substring(startIndex, endIndex)));
 
-    if (label.includes("space")) {
+    console.log(`Processing section - Label: "${label}", Content length: ${content.length}`);
+
+    // More specific matching to avoid conflicts
+    if (label.includes("the space") || (label.includes("space") && !label.includes("guest"))) {
       sections.space = content;
-    } else if (label.includes("guest access")) {
+      console.log(`Assigned to space: ${content.substring(0, 50)}...`);
+    } else if (label.includes("guest access") || label.includes("guest interaction")) {
       sections.guest_access = content;
+      console.log(`Assigned to guest_access: ${content.substring(0, 50)}...`);
     } else if (label.includes("other things to note") || label.includes("other things") || label.includes("other notes")) {
       sections.other_notes = content;
+      console.log(`Assigned to other_notes: ${content.substring(0, 50)}...`);
+    } else {
+      console.log(`Label "${label}" did not match any known section`);
     }
   }
+
+  console.log('Final sections:', {
+    has_listing_description: !!sections.listing_description,
+    has_space: !!sections.space,
+    has_guest_access: !!sections.guest_access,
+    has_other_notes: !!sections.other_notes
+  });
 
   return sections;
 }
