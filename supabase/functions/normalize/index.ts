@@ -275,14 +275,17 @@ function normalizeListing(raw: any): any {
   const detailsPrices = price.details || {};
   const baseKey = Object.keys(detailsPrices).find(k => k.includes("nights x $")) || "";
   const basePrice = baseKey.includes("$") ? moneyToFloat(baseKey.split("$")[1]) : 0.0;
+  
+  const mainPrice = String(price.main?.price || "");
+  const totalPrice = String(detailsPrices.Total || "");
 
   listing.price = {
     base_price: basePrice,
     cleaning_fee: 0.0,
     service_fee: 0.0,
     taxes: moneyToFloat(detailsPrices.Taxes),
-    total: moneyToFloat(detailsPrices.Total || price.main?.price || ""),
-    currency: (price.main?.price?.includes("$") || detailsPrices.Total?.includes("$")) ? "USD" : "",
+    total: moneyToFloat(totalPrice || mainPrice),
+    currency: (mainPrice.includes("$") || totalPrice.includes("$")) ? "USD" : "",
   };
 
   return out;
