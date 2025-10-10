@@ -46,33 +46,38 @@ export type Database = {
       }
       results: {
         Row: {
-          created_at: string | null
-          data: Json | null
-          id: number
-          inserted_at: string | null
+          created_at: string
+          id: string
           listing_id: string
-          original_url: string | null
-          url: string | null
+          normalized_data: Json
+          request_id: string
+          updated_at: string
         }
         Insert: {
-          created_at?: string | null
-          data?: Json | null
-          id?: number
-          inserted_at?: string | null
+          created_at?: string
+          id?: string
           listing_id: string
-          original_url?: string | null
-          url?: string | null
+          normalized_data: Json
+          request_id: string
+          updated_at?: string
         }
         Update: {
-          created_at?: string | null
-          data?: Json | null
-          id?: number
-          inserted_at?: string | null
+          created_at?: string
+          id?: string
           listing_id?: string
-          original_url?: string | null
-          url?: string | null
+          normalized_data?: Json
+          request_id?: string
+          updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "results_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: true
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
