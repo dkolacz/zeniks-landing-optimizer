@@ -93,23 +93,85 @@ function parseDescriptionSections(htmlText: string): Record<string, string> {
 
   // Process labeled sections
   for (let i = 0; i < matches.length; i++) {
-    const label = cleanText(stripHtmlTags(matches[i][1] || "")).toLowerCase();
+    const innerOriginal = cleanText(stripHtmlTags(matches[i][1] || ""));
+    const label = innerOriginal.toLowerCase();
+
     const startIndex = matches[i].index! + matches[i][0].length;
     const endIndex = i + 1 < matches.length ? matches[i + 1].index! : htmlText.length;
     const content = cleanText(stripHtmlTags(htmlText.substring(startIndex, endIndex)));
 
     console.log(`Processing section - Label: "${label}", Content length: ${content.length}`);
 
-    // More specific matching to avoid conflicts
-    if (label.includes("the space") || (label.includes("space") && !label.includes("guest"))) {
-      sections.space = content;
-      console.log(`Assigned to space: ${content.substring(0, 50)}...`);
-    } else if (label.includes("guest access") || label.includes("guest interaction")) {
-      sections.guest_access = content;
-      console.log(`Assigned to guest_access: ${content.substring(0, 50)}...`);
-    } else if (label.includes("other things to note") || label.includes("other things") || label.includes("other notes")) {
-      sections.other_notes = content;
-      console.log(`Assigned to other_notes: ${content.substring(0, 50)}...`);
+    // Helper to escape regex special chars
+    const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    // Section markers
+    const markers = {
+      space: ["the space", "space"],
+      guest_access: ["guest access", "guest interaction"],
+      other_notes: ["other things to note", "other things", "other notes"],
+    } as const;
+
+    // Try to extract text that appears INSIDE the <b> tag before the marker itself
+    const extractPreText = (text: string, type: keyof typeof markers): string => {
+      const joined = markers[type].map(esc).join("|");
+      // Pattern 1: long text then marker at the end
+      const tail = new RegExp(`^(.*?)(?:\\s*[\\-:\\u2013\\u2014]?\\s*)?(?:${joined})\\s*$`, "i");
+      const m1 = text.match(tail);
+      if (m1 && m1[1]) return cleanText(m1[1]);
+      // Pattern 2: marker first then text
+      const head = new RegExp(`^(?:${joined})(?:\\s*[\\-:\\u2013\\u2014]?\\s*)(.*)$`, "i");
+      const m2 = text.match(head);
+      if (m2 && m2[1]) return cleanText(m2[1]);
+      return "";
+    };
+
+    const includesAny = (needleList: readonly string[]) => needleList.some((m) => label.includes(m));
+
+    // Determine which section this label is for
+    let type: "space" | "guest_access" | "other_notes" | null = null;
+    if (includesAny(markers.space) && !label.includes("guest")) {
+      type = "space";
+    } else if (includesAny(markers.guest_access)) {
+      type = "guest_access";
+    } else if (includesAny(markers.other_notes)) {
+      type = "other_notes";
+    }
+
+    // Assign helper that avoids overwriting non-empty values
+    const assignIfEmpty = (key: keyof typeof sections, value: string, source: string) => {
+      if (!value) return;
+      if (!sections[key]) {
+        sections[key] = value;
+        console.log(`Assigned to ${key} from ${source}: ${value.substring(0, 50)}...`);
+      } else {
+        console.log(`Skip assigning to ${key} from ${source} (already set)`);
+      }
+    };
+
+    // Main assignment logic
+    if (type === "space") {
+      if (content) assignIfEmpty("space", content, "content-between-b-tags");
+      if (!sections.space) {
+        const pre = extractPreText(innerOriginal, "space");
+        if (pre) assignIfEmpty("space", pre, "label-pre-text");
+      }
+    } else if (type === "guest_access") {
+      if (content) assignIfEmpty("guest_access", content, "content-between-b-tags");
+      if (!sections.guest_access) {
+        const pre = extractPreText(innerOriginal, "guest_access");
+        if (pre) assignIfEmpty("guest_access", pre, "label-pre-text");
+      }
+    } else if (type === "other_notes") {
+      // Often the label contains a sentence about guest access followed by "other things to note"
+      // so capture the pre-text as potential guest_access, while the content after belongs to other_notes
+      if (content) assignIfEmpty("other_notes", content, "content-between-b-tags");
+
+      const preGuest = extractPreText(innerOriginal, "other_notes");
+      // Heuristic: only treat as guest access if it mentions guests/access/exclusive
+      if (preGuest && /(guest|access|exclusive|entire property)/i.test(preGuest)) {
+        assignIfEmpty("guest_access", preGuest, "label-pre-text-from-other-notes");
+      }
     } else {
       console.log(`Label "${label}" did not match any known section`);
     }
