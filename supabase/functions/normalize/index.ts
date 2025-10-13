@@ -64,85 +64,73 @@ function stripHtmlTags(html: string): string {
 }
 
 function parseDescriptionSections(htmlText: string, locationDescriptions: any[] = []): Record<string, string> {
+  // Initialize all sections as empty strings per spec
   const sections: Record<string, string> = {
-    listing_description: "",
     space: "",
-    guest_access: "",
     other_notes: "",
+    guest_access: "",
     neighbourhood: "",
     getting_around: "",
+    listing_description: "",
   };
+
+  // Extract neighbourhood and getting_around from location_descriptions using exact titles
+  for (const loc of locationDescriptions || []) {
+    const t = String(loc?.title || "").trim().toLowerCase();
+    if (t === "neighborhood highlights") {
+      sections.neighbourhood = cleanText(loc?.content || "");
+    } else if (t === "getting around") {
+      sections.getting_around = cleanText(loc?.content || "");
+    }
+  }
 
   if (!htmlText) return sections;
 
-  // Extract neighbourhood and getting_around from location_descriptions
-  for (const loc of locationDescriptions || []) {
-    const title = (loc.title || "").toLowerCase();
-    if (title.includes("neighborhood") || title.includes("neighbourhood")) {
-      sections.neighbourhood = cleanText(loc.content || "");
-    } else if (title.includes("getting around")) {
-      sections.getting_around = cleanText(loc.content || "");
-    }
-  }
-
-  // Find all <b> tags with their positions
+  // Find all bold section headers and their positions
   const bTagRegex = /<b[^>]*>(.*?)<\/b>/gi;
   const matches = [...htmlText.matchAll(bTagRegex)];
 
-  console.log(`Found ${matches.length} section headers in description`);
-
+  // listing_description: everything before the first <b> tag (if any), otherwise the whole text
   if (matches.length === 0) {
-    // No sections, entire text is listing_description
     sections.listing_description = cleanText(stripHtmlTags(htmlText));
     return sections;
   }
-
-  // Text before first <b> tag is listing_description
-  const firstBIndex = matches[0].index!;
-  if (firstBIndex > 0) {
-    sections.listing_description = cleanText(stripHtmlTags(htmlText.substring(0, firstBIndex)));
+  const firstIndex = matches[0].index ?? 0;
+  if (firstIndex > 0) {
+    sections.listing_description = cleanText(stripHtmlTags(htmlText.substring(0, firstIndex)));
+  } else {
+    sections.listing_description = "";
   }
 
-  // Process each <b> tag and extract content until next <b> tag
+  // Helper to map label text to a section key
+  const mapLabelToKey = (label: string): keyof typeof sections | null => {
+    const l = label.toLowerCase();
+    if (l.includes("guest access")) return "guest_access";
+    if (
+      l.includes("other things to note") ||
+      l.includes("other things") ||
+      l.includes("other notes")
+    ) return "other_notes";
+    if (l.includes("space")) return "space";
+    return null;
+  };
+
+  // Walk through labels and capture content until the next label
   for (let i = 0; i < matches.length; i++) {
-    const label = cleanText(matches[i][1] || "").toLowerCase();
-    
-    // Start after the closing </b> tag
-    const startIndex = matches[i].index! + matches[i][0].length;
-    // End at the next <b> tag or end of string
-    const endIndex = i + 1 < matches.length ? matches[i + 1].index! : htmlText.length;
-    
-    const content = cleanText(stripHtmlTags(htmlText.substring(startIndex, endIndex)));
+    const m = matches[i];
+    const labelText = cleanText(stripHtmlTags(m[1] || ""));
+    const key = mapLabelToKey(labelText);
 
-    console.log(`Section "${label}" → content length: ${content.length}`);
+    // Determine content boundaries: after this </b> until next <b> or end of string
+    const start = (m.index ?? 0) + m[0].length;
+    const end = i + 1 < matches.length ? (matches[i + 1].index ?? htmlText.length) : htmlText.length;
+    const rawContent = htmlText.substring(start, end);
+    const content = cleanText(stripHtmlTags(rawContent));
 
-    // Map label to section key
-    if (label.includes('space')) {
-      sections.space = content;
-      console.log(`✓ Assigned to space: ${content.substring(0, 60)}...`);
-    } else if (label.includes('guest access') || label.includes('guest interaction')) {
-      sections.guest_access = content;
-      console.log(`✓ Assigned to guest_access: ${content.substring(0, 60)}...`);
-    } else if (
-      label.includes('other things to note') ||
-      label.includes('other things') ||
-      label.includes('other notes')
-    ) {
-      sections.other_notes = content;
-      console.log(`✓ Assigned to other_notes: ${content.substring(0, 60)}...`);
-    } else {
-      console.log(`⚠ Label "${label}" did not match any known section`);
+    if (key && !sections[key]) {
+      sections[key] = content;
     }
   }
-
-  console.log('Final sections:', {
-    listing_description: sections.listing_description.substring(0, 60),
-    space: sections.space.substring(0, 60),
-    guest_access: sections.guest_access.substring(0, 60),
-    other_notes: sections.other_notes.substring(0, 60),
-    neighbourhood: sections.neighbourhood.substring(0, 60),
-    getting_around: sections.getting_around.substring(0, 60),
-  });
 
   return sections;
 }
