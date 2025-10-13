@@ -77,59 +77,81 @@ function parseDescriptionSections(htmlText: string, locationDescriptions: any[] 
   // Extract neighbourhood and getting_around from location_descriptions using exact titles
   for (const loc of locationDescriptions || []) {
     const t = String(loc?.title || "").trim().toLowerCase();
+    const content = cleanText(stripHtmlTags(String(loc?.content || "")));
     if (t === "neighborhood highlights") {
-      sections.neighbourhood = cleanText(loc?.content || "");
+      sections.neighbourhood = content;
     } else if (t === "getting around") {
-      sections.getting_around = cleanText(loc?.content || "");
+      sections.getting_around = content;
     }
   }
 
   if (!htmlText) return sections;
 
-  // Find all bold section headers and their positions
+  // Build an ordered list of all bold headings with their positions
+  const lower = htmlText.toLowerCase();
   const bTagRegex = /<b[^>]*>(.*?)<\/b>/gi;
-  const matches = [...htmlText.matchAll(bTagRegex)];
+  const bolds: Array<{ label: string; start: number; end: number }> = [];
+  let m: RegExpExecArray | null;
+  while ((m = bTagRegex.exec(lower)) !== null) {
+    const label = cleanText(stripHtmlTags(m[1] || "")).toLowerCase();
+    const start = m.index ?? 0; // index of <b>
+    const end = start + (m[0]?.length || 0); // after </b>
+    bolds.push({ label, start, end });
+  }
 
   // listing_description: everything before the first <b> tag (if any), otherwise the whole text
-  if (matches.length === 0) {
+  if (bolds.length === 0) {
     sections.listing_description = cleanText(stripHtmlTags(htmlText));
     return sections;
   }
-  const firstIndex = matches[0].index ?? 0;
-  if (firstIndex > 0) {
-    sections.listing_description = cleanText(stripHtmlTags(htmlText.substring(0, firstIndex)));
-  } else {
-    sections.listing_description = "";
-  }
+  sections.listing_description = cleanText(stripHtmlTags(htmlText.substring(0, bolds[0].start)));
 
-  // Helper to map label text to a section key
-  const mapLabelToKey = (label: string): keyof typeof sections | null => {
-    const l = label.toLowerCase();
-    if (l.includes("guest access")) return "guest_access";
-    if (
-      l.includes("other things to note") ||
-      l.includes("other things") ||
-      l.includes("other notes")
-    ) return "other_notes";
-    if (l.includes("space")) return "space";
-    return null;
+  // Helper to find index of a specific section heading among bolds
+  const findIndex = (predicate: (s: string) => boolean) => bolds.findIndex(b => predicate(b.label));
+
+  // Prefer exact matches, otherwise substring fallbacks
+  const idxSpace = (() => {
+    let i = findIndex(s => s === "the space");
+    if (i === -1) i = findIndex(s => s.includes("space"));
+    return i;
+  })();
+
+  const idxGuest = (() => {
+    let i = findIndex(s => s === "guest access");
+    if (i === -1) i = findIndex(s => s.includes("guest access"));
+    return i;
+  })();
+
+  const idxOther = (() => {
+    let i = findIndex(s => s === "other things to note");
+    if (i === -1) i = findIndex(s => s.includes("other things to note") || s.includes("other things") || s.includes("other notes"));
+    return i;
+  })();
+
+  // Helper to slice content between the end of one bold and the start of the next bold
+  const sliceBetween = (startAfterBold: number, nextBoldStart: number | null) => {
+    const start = startAfterBold;
+    const end = nextBoldStart ?? htmlText.length;
+    if (start >= 0 && end > start) {
+      return cleanText(stripHtmlTags(htmlText.substring(start, end)));
+    }
+    return "";
   };
 
-  // Walk through labels and capture content until the next label
-  for (let i = 0; i < matches.length; i++) {
-    const m = matches[i];
-    const labelText = cleanText(stripHtmlTags(m[1] || ""));
-    const key = mapLabelToKey(labelText);
+  const nextStart = (currentIdx: number | null) => {
+    if (currentIdx === null || currentIdx < 0) return null;
+    const following = bolds.find((_, i) => i > (currentIdx as number));
+    return following ? following.start : null;
+  };
 
-    // Determine content boundaries: after this </b> until next <b> or end of string
-    const start = (m.index ?? 0) + m[0].length;
-    const end = i + 1 < matches.length ? (matches[i + 1].index ?? htmlText.length) : htmlText.length;
-    const rawContent = htmlText.substring(start, end);
-    const content = cleanText(stripHtmlTags(rawContent));
-
-    if (key && !sections[key]) {
-      sections[key] = content;
-    }
+  if (idxSpace >= 0) {
+    sections.space = sliceBetween(bolds[idxSpace].end, nextStart(idxSpace));
+  }
+  if (idxGuest >= 0) {
+    sections.guest_access = sliceBetween(bolds[idxGuest].end, nextStart(idxGuest));
+  }
+  if (idxOther >= 0) {
+    sections.other_notes = sliceBetween(bolds[idxOther].end, nextStart(idxOther));
   }
 
   return sections;
