@@ -1,16 +1,21 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 const Product = () => {
   const { listingId } = useParams<{ listingId: string }>();
+  const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [listingData, setListingData] = useState<{ title: string; first_image_url: string } | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [requestId, setRequestId] = useState<string | null>(null);
 
   const steps = [
     "🔍 Reading your listing data…",
@@ -28,7 +33,7 @@ const Product = () => {
     try {
       const { data, error } = await supabase
         .from('requests')
-        .select('data, status')
+        .select('id, data, status')
         .eq('listing_id', listingId)
         .order('fetched_at', { ascending: false })
         .limit(1);
@@ -40,6 +45,12 @@ const Product = () => {
 
       if (data && data.length > 0) {
         const request = data[0];
+        
+        // Store request ID for payment
+        if (request.id) {
+          setRequestId(request.id);
+        }
+        
         if (request.status === 'done' && request.data) {
           // Extract title and first image URL from nested data structure
           const requestData = request.data as any;
@@ -103,6 +114,61 @@ const Product = () => {
       clearInterval(statusInterval);
     };
   }, [listingId, currentStep, steps.length]);
+
+  const handleRequestReport = async () => {
+    if (!email || !requestId) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter your email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsProcessingPayment(true);
+
+    try {
+      console.log('Creating checkout session for request:', requestId);
+      
+      // Call the create-checkout edge function
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { requestId }
+      });
+
+      if (error) {
+        console.error('Error creating checkout session:', error);
+        throw error;
+      }
+
+      if (!data?.url) {
+        throw new Error('No checkout URL returned');
+      }
+
+      console.log('Redirecting to Stripe checkout:', data.url);
+      
+      // Redirect to Stripe checkout
+      window.location.href = data.url;
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast({
+        title: "Payment Error",
+        description: error instanceof Error ? error.message : "Failed to initiate payment. Please try again.",
+        variant: "destructive",
+      });
+      setIsProcessingPayment(false);
+    }
+  };
 
   if (!listingId) {
     return (
@@ -212,12 +278,19 @@ const Product = () => {
                             type="email"
                             id="email"
                             placeholder="Enter your email address"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-zeniks-purple focus:border-transparent transition-colors"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            disabled={isProcessingPayment}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-zeniks-purple focus:border-transparent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           />
                         </div>
                         
-                        <button className="w-full bg-zeniks-purple hover:bg-zeniks-purple/90 text-white font-bold py-4 px-6 rounded-lg text-lg transition-colors shadow-lg hover:shadow-xl">
-                          Request Report – $19.90
+                        <button 
+                          onClick={handleRequestReport}
+                          disabled={!email || !requestId || isProcessingPayment}
+                          className="w-full bg-zeniks-purple hover:bg-zeniks-purple/90 text-white font-bold py-4 px-6 rounded-lg text-lg transition-colors shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isProcessingPayment ? "Redirecting to payment..." : "Request Report – $19.90"}
                         </button>
                       </div>
                     </div>

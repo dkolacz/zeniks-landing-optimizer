@@ -15,8 +15,12 @@ serve(async (req) => {
   }
 
   try {
-    const { listingUrl, platform, fullName, email } = await req.json();
-    console.log('Received request:', { listingUrl, platform, fullName, email });
+    const { requestId } = await req.json();
+    console.log('Received checkout request for request_id:', requestId);
+
+    if (!requestId) {
+      throw new Error('request_id is required');
+    }
 
     // Initialize Stripe with the secret key from environment variables
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
@@ -29,57 +33,49 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    // First, create the analysis request record
-    console.log('Creating initial database record...');
-    const { data: insertData, error: insertError } = await supabaseClient
-      .from('listing_analysis_requests')
-      .insert({
-        listing_url: listingUrl,
-        platform,
-        full_name: fullName,
-        email,
-        payment_status: 'pending',
-        status: 'requested'
-      })
-      .select()
+    // Verify the request exists
+    const { data: requestData, error: requestError } = await supabaseClient
+      .from('requests')
+      .select('*')
+      .eq('id', requestId)
       .single();
 
-    if (insertError) {
-      console.error('Error creating initial record:', insertError);
-      throw new Error('Failed to create analysis request');
+    if (requestError || !requestData) {
+      console.error('Error fetching request:', requestError);
+      throw new Error('Request not found');
     }
 
-    console.log('Created initial record:', insertData);
+    console.log('Found request:', requestData);
 
     // Create Stripe checkout session
     console.log('Creating payment session...');
     const session = await stripe.checkout.sessions.create({
-      customer_email: email,
       line_items: [
         {
-          price: 'price_1Qih2YEQ1gZWqi10f290YZ38', // Updated price ID
+          price: 'price_1SBJVMAGm0tqztuhV76F3LhY',
           quantity: 1,
         },
       ],
       mode: 'payment',
-      success_url: `${req.headers.get('origin')}/payment?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get('origin')}/payment?status=cancelled`,
+      success_url: `https://zeniks.co/report?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `https://zeniks.co/?canceled=1`,
       metadata: {
-        request_id: insertData.id, // Include the request ID in metadata
+        request_id: requestId,
       },
     });
 
-    // Update the record with the session ID
+    // Update the request with status and session ID
     const { error: updateError } = await supabaseClient
-      .from('listing_analysis_requests')
+      .from('requests')
       .update({
+        status: 'awaiting_payment',
         stripe_session_id: session.id
       })
-      .eq('id', insertData.id);
+      .eq('id', requestId);
 
     if (updateError) {
-      console.error('Error updating session ID:', updateError);
-      throw new Error('Failed to update session ID');
+      console.error('Error updating request:', updateError);
+      throw new Error('Failed to update request status');
     }
 
     console.log('Payment session created:', session.id);
