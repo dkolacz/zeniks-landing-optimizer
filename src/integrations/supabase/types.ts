@@ -14,32 +14,79 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          request_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          request_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          request_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_jobs_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       requests: {
         Row: {
           created_at: string
+          customer_email: string | null
           data: Json | null
           fetched_at: string | null
           id: string
           listing_id: string
           status: Database["public"]["Enums"]["request_status"]
+          stripe_payment_intent: string | null
+          stripe_session_id: string | null
           url: string
         }
         Insert: {
           created_at?: string
+          customer_email?: string | null
           data?: Json | null
           fetched_at?: string | null
           id?: string
           listing_id: string
           status?: Database["public"]["Enums"]["request_status"]
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
           url: string
         }
         Update: {
           created_at?: string
+          customer_email?: string | null
           data?: Json | null
           fetched_at?: string | null
           id?: string
           listing_id?: string
           status?: Database["public"]["Enums"]["request_status"]
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
           url?: string
         }
         Relationships: []
@@ -87,7 +134,13 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      request_status: "pending" | "processing" | "done" | "failed"
+      request_status:
+        | "pending"
+        | "processing"
+        | "done"
+        | "failed"
+        | "awaiting_payment"
+        | "paid"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -215,7 +268,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      request_status: ["pending", "processing", "done", "failed"],
+      request_status: [
+        "pending",
+        "processing",
+        "done",
+        "failed",
+        "awaiting_payment",
+        "paid",
+      ],
     },
   },
 } as const
