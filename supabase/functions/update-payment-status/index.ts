@@ -38,11 +38,10 @@ serve(async (req) => {
     if (session.payment_status === 'paid') {
       // Update payment status in database
       const { data: requestData, error: updateError } = await supabaseClient
-        .from('listing_analysis_requests')
+        .from('requests')
         .update({
-          payment_status: 'completed',
-          status: 'paid',
-          stripe_payment_id: session.payment_intent as string,
+          status: 'done',
+          stripe_payment_intent: session.payment_intent as string,
         })
         .eq('stripe_session_id', session_id)
         .select()
@@ -60,11 +59,10 @@ serve(async (req) => {
         console.log('Starting MailerLite integration...');
         
         const subscriberData = {
-          email: requestData.email,
+          email: requestData.customer_email,
           fields: {
-            name: requestData.full_name,
-            platform: requestData.platform,
-            listing_url: requestData.listing_url
+            listing_id: requestData.listing_id,
+            listing_url: requestData.url
           },
           groups: ['142779501276824694'] // Updated with the correct group ID
         };
