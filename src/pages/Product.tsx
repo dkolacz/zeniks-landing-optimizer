@@ -143,7 +143,7 @@ const Product = () => {
       
       // Call the create-checkout edge function
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { requestId }
+        body: { requestId, email }
       });
 
       if (error) {

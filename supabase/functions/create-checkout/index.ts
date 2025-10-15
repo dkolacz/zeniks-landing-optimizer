@@ -15,11 +15,15 @@ serve(async (req) => {
   }
 
   try {
-    const { requestId } = await req.json();
-    console.log('Received checkout request for request_id:', requestId);
+    const { requestId, email } = await req.json();
+    console.log('Received checkout request for request_id:', requestId, 'email:', email);
 
     if (!requestId) {
       throw new Error('request_id is required');
+    }
+
+    if (!email) {
+      throw new Error('email is required');
     }
 
     // Initialize Stripe with the secret key from environment variables
@@ -64,12 +68,13 @@ serve(async (req) => {
       },
     });
 
-    // Update the request with status and session ID
+    // Update the request with status, session ID, and customer email
     const { error: updateError } = await supabaseClient
       .from('requests')
       .update({
         status: 'awaiting_payment',
-        stripe_session_id: session.id
+        stripe_session_id: session.id,
+        customer_email: email
       })
       .eq('id', requestId);
 
